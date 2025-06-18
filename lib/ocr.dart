@@ -100,7 +100,7 @@ class _IdCardOcrPageState extends State<IdCardOcrPage> {
       // 서버 전송
       final base64Image = base64Encode(croppedBytes);
       final response = await http.post(
-        Uri.parse('http://192.168.55.92:5000/ocr'), // ← 서버 주소에 맞게 수정
+        Uri.parse('http://13.210.72.226:5001/ocr'), // ← 서버 주소에 맞게 수정
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'image': base64Image}),
       );
