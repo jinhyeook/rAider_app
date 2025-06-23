@@ -97,7 +97,7 @@ class _IdCardOcrPageState extends State<IdCardOcrPage> {
 
       setState(() { _croppedImageFile = croppedFile; });
 
-      // 서버 전송
+      // 포트 번호 꼭 붙이기
       final base64Image = base64Encode(croppedBytes);
       final response = await http.post(
         Uri.parse('http://3.34.181.33:5001/ocr'), // ← 서버 주소에 맞게 수정
