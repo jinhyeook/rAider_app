@@ -100,7 +100,9 @@ class _IdCardOcrPageState extends State<IdCardOcrPage> {
       // 포트 번호 꼭 붙이기
       final base64Image = base64Encode(croppedBytes);
       final response = await http.post(
-        Uri.parse('http://3.34.48.22:5001/ocr'), // ← 서버 주소에 맞게 수정
+        // Uri.parse('http://3.34.48.22:5001/ocr'), // AWS 서버 주소
+        // Uri.parse('http://192.168.45.90:5000/ocr'), // 로컬 서버 주소(노트북)
+        Uri.parse('http://192.168.55.92:5000/ocr'), // 로컬 서버 주소(데스크탑)
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'image': base64Image}),
       );

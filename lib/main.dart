@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'login.dart';
 import 'signup.dart';
+import 'home.dart';
+import 'auth_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -14,6 +16,9 @@ void main() async {
       print('네이버맵 인증 실패: $error');
     },
   );
+
+  // 사용자 인증 상태 로드
+  await AuthService().loadUserData();
 
   runApp(const MyApp());
 }
@@ -29,7 +34,7 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.green,
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      home: const WelcomeScreen(),
+      home: AuthService().isLoggedIn ? const HomeScreen() : const WelcomeScreen(),
       debugShowCheckedModeBanner: false,
     );
   }

@@ -2,9 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:untitled/report_mode.dart';
 import 'device_rental.dart';
 import 'startDrive.dart';
+import 'auth_service.dart';
+import 'main.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
+
+  // 로그아웃 함수
+  Future<void> _logout(BuildContext context) async {
+    final authService = AuthService();
+    await authService.logout();
+    
+    // 로그인 화면으로 이동
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (context) => const WelcomeScreen()),
+      (route) => false,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -12,6 +27,13 @@ class HomeScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('rAider'),
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () => _logout(context),
+            tooltip: '로그아웃',
+          ),
+        ],
       ),
       body: Center(
         child: Column(

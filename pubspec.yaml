@@ -48,6 +48,9 @@ dependencies:
 
   # Text-to-speech package for announcing detected objects
   flutter_tts: ^3.8.5
+  
+  # Shared preferences for storing user data
+  shared_preferences: ^2.2.2
 
 dev_dependencies:
   flutter_test:

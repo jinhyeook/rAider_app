@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import 'login.dart';
-import 'auth_service.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -23,6 +23,9 @@ class _SignupScreenState extends State<SignupScreen> {
   bool _confirmPasswordVisible = false;
   bool _isLoading = false;
   String? _selectedSex = 'M';
+  
+  // API 서버 URL (실제 서버 주소로 변경)
+  static const String _baseUrl = 'http://3.34.48.22:5000';
 
   @override
   void dispose() {
@@ -36,7 +39,7 @@ class _SignupScreenState extends State<SignupScreen> {
     super.dispose();
   }
 
-  // 회원가입 함수
+  // 회원가입 API 호출 함수
   Future<void> _signup() async {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -46,44 +49,61 @@ class _SignupScreenState extends State<SignupScreen> {
       _isLoading = true;
     });
 
-    final authService = AuthService();
-    final result = await authService.register({
-      'username': _nameController.text.trim(),
-      'email': _emailController.text.trim(),
-      'password': _passwordController.text,
-      'phone': _phoneController.text.trim(),
-      'birth': _birthController.text.trim(),
-      'driver_license': _driverLicenseController.text.trim(),
-      'sex': _selectedSex,
-    });
-
-    if (result['success']) {
-      // 회원가입 성공
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('회원가입이 완료되었습니다! 환영합니다, ${_nameController.text.trim()}님!'),
-          backgroundColor: Colors.green,
-        ),
+    try {
+      final response = await http.post(
+        Uri.parse('$_baseUrl/api/auth/register'),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'username': _nameController.text.trim(),
+          'email': _emailController.text.trim(),
+          'password': _passwordController.text,
+          'phone': _phoneController.text.trim(),
+          'birth': _birthController.text.trim(),
+          'driver_license': _driverLicenseController.text.trim(),
+          'sex': _selectedSex,
+        }),
       );
 
-      // 로그인 화면으로 이동
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const LoginScreen()),
-      );
-    } else {
-      // 회원가입 실패
+      final responseData = jsonDecode(response.body);
+
+      if (response.statusCode == 201) {
+        // 회원가입 성공
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('회원가입이 완료되었습니다! 환영합니다, ${responseData['username']}님!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+
+        // 로그인 화면으로 이동
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const LoginScreen()),
+        );
+      } else {
+        // 회원가입 실패
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(responseData['error'] ?? '회원가입에 실패했습니다.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      // 네트워크 오류 등
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(result['message']),
+          content: Text('네트워크 오류가 발생했습니다. 다시 시도해주세요.'),
           backgroundColor: Colors.red,
         ),
       );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
     }
-
-    setState(() {
-      _isLoading = false;
-    });
   }
 
   // 이메일 중복 확인 함수
@@ -98,15 +118,42 @@ class _SignupScreenState extends State<SignupScreen> {
       return;
     }
 
-    final authService = AuthService();
-    final result = await authService.checkEmail(_emailController.text.trim());
+    try {
+      final response = await http.post(
+        Uri.parse('$_baseUrl/api/auth/check-email'),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'email': _emailController.text.trim(),
+        }),
+      );
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(result['message']),
-        backgroundColor: result['success'] && result['available'] ? Colors.green : Colors.red,
-      ),
-    );
+      final responseData = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(responseData['message']),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(responseData['message']),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('이메일 확인 중 오류가 발생했습니다.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   @override
@@ -272,12 +319,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       border: OutlineInputBorder(),
                       prefixIcon: Icon(Icons.phone),
                     ),
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [
-                      FilteringTextInputFormatter.digitsOnly,
-                      LengthLimitingTextInputFormatter(11),
-                      PhoneNumberFormatter(),
-                    ],
+                    keyboardType: TextInputType.phone,
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return '전화번호를 입력해주세요';
@@ -303,12 +345,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       border: OutlineInputBorder(),
                       prefixIcon: Icon(Icons.calendar_today),
                     ),
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [
-                      FilteringTextInputFormatter.digitsOnly,
-                      LengthLimitingTextInputFormatter(8),
-                      DateFormatter(),
-                    ],
+                    keyboardType: TextInputType.datetime,
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return '생년월일을 입력해주세요';
@@ -370,9 +407,6 @@ class _SignupScreenState extends State<SignupScreen> {
                       border: OutlineInputBorder(),
                       prefixIcon: Icon(Icons.card_membership),
                     ),
-                    inputFormatters: [
-                      LengthLimitingTextInputFormatter(17), // 최대 17자 (하이픈 포함)
-                    ],
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return '운전면허증 번호를 입력해주세요';
@@ -419,59 +453,5 @@ class _SignupScreenState extends State<SignupScreen> {
         ),
       ),
     );
-  }
-}
-
-// 전화번호 포맷터 클래스
-class PhoneNumberFormatter extends TextInputFormatter {
-  @override
-  TextEditingValue formatEditUpdate(
-    TextEditingValue oldValue,
-    TextEditingValue newValue,
-  ) {
-    final text = newValue.text;
-    
-    if (text.length <= 3) {
-      return newValue;
-    } else if (text.length <= 7) {
-      final formatted = '${text.substring(0, 3)}-${text.substring(3)}';
-      return TextEditingValue(
-        text: formatted,
-        selection: TextSelection.collapsed(offset: formatted.length),
-      );
-    } else {
-      final formatted = '${text.substring(0, 3)}-${text.substring(3, 7)}-${text.substring(7)}';
-      return TextEditingValue(
-        text: formatted,
-        selection: TextSelection.collapsed(offset: formatted.length),
-      );
-    }
-  }
-}
-
-// 생년월일 포맷터 클래스
-class DateFormatter extends TextInputFormatter {
-  @override
-  TextEditingValue formatEditUpdate(
-    TextEditingValue oldValue,
-    TextEditingValue newValue,
-  ) {
-    final text = newValue.text;
-    
-    if (text.length <= 4) {
-      return newValue;
-    } else if (text.length <= 6) {
-      final formatted = '${text.substring(0, 4)}-${text.substring(4)}';
-      return TextEditingValue(
-        text: formatted,
-        selection: TextSelection.collapsed(offset: formatted.length),
-      );
-    } else {
-      final formatted = '${text.substring(0, 4)}-${text.substring(4, 6)}-${text.substring(6)}';
-      return TextEditingValue(
-        text: formatted,
-        selection: TextSelection.collapsed(offset: formatted.length),
-      );
-    }
   }
 }
