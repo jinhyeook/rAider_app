@@ -102,6 +102,7 @@ class _IdCardOcrPageState extends State<IdCardOcrPage> {
       final response = await http.post(
         // Uri.parse('http://3.34.48.22:5001/ocr'), // AWS 서버 주소
         // Uri.parse('http://192.168.45.90:5000/ocr'), // 로컬 서버 주소(노트북)
+        // Uri.parse('http://192.168.173.229:5000/ocr'), // 로컬 서버 주소(핫스팟)
         Uri.parse('http://192.168.55.92:5000/ocr'), // 로컬 서버 주소(데스크탑)
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'image': base64Image}),
