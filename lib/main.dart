@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'login.dart';
 import 'signup.dart';
@@ -42,6 +43,62 @@ class MyApp extends StatelessWidget {
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
+
+  /// 앱 종료 확인 다이얼로그
+  void _showExitDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text(
+            '앱 종료',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF0F5C31),
+            ),
+          ),
+          content: const Text(
+            '정말로 앱을 종료하시겠습니까?',
+            style: TextStyle(fontSize: 16),
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // 다이얼로그 닫기
+              },
+              child: const Text(
+                '취소',
+                style: TextStyle(
+                  color: Colors.grey,
+                  fontSize: 16,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // 다이얼로그 닫기
+                SystemNavigator.pop(); // 앱 종료
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red[600],
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: const Text(
+                '종료',
+                style: TextStyle(fontSize: 16),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -105,6 +162,18 @@ class WelcomeScreen extends StatelessWidget {
                 foregroundColor: Colors.white,
               ),
               child: const Text('Sign Up', style: TextStyle(fontSize: 18)),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                _showExitDialog(context);
+              },
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 15),
+                backgroundColor: Colors.red[600],
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('EXIT', style: TextStyle(fontSize: 18)),
             ),
           ],
         ),

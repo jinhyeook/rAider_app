@@ -4,6 +4,7 @@ import 'device_rental.dart';
 import 'startDrive.dart';
 import 'auth_service.dart';
 import 'main.dart';
+import 'mypage.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -104,6 +105,25 @@ class HomeScreen extends StatelessWidget {
                 minimumSize: const Size(200, 50),
               ),
               child: const Text('Report', style: TextStyle(fontSize: 18)),
+            ),
+            const SizedBox(height: 20),
+            // 네 번째 기능 버튼 - 마이페이지
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const MyPageScreen(),
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 15),
+                backgroundColor: Color(0xFF0F5C31),
+                foregroundColor: Colors.white,
+                minimumSize: const Size(200, 50),
+              ),
+              child: const Text('My Page', style: TextStyle(fontSize: 18)),
             ),
           ],
         ),

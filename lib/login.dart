@@ -145,6 +145,7 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 20),
 
               // 홈 화면으로 이동하는 디버그 버튼
+              /*
               ElevatedButton(
                 onPressed: () {
                   Navigator.pushReplacement(
@@ -158,7 +159,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   foregroundColor: Colors.white,
                 ),
                 child: const Text('Test : go to main', style: TextStyle(fontSize: 18)),
-              ),
+              ),*/
             ],
           ),
         ),
