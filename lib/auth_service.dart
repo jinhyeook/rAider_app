@@ -4,10 +4,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthService {
   // static const String _baseUrl = 'http://3.34.48.22:5000'; // AWS 서버 주소
-  // static const String _baseUrl = 'http://192.168.55.92:5000'; // 로컬 서버 주소(데스크탑)
-  //static const String _baseUrl = 'http://192.168.45.193:5000'; // 로컬 서버 주소(노트북)
-  static const String _baseUrl = 'http://192.168.173.229:5000'; // 로컬 서버 주소(핫스팟)
   
+  //static const String _baseUrl = 'http://192.168.45.193:5000'; // 로컬 서버 주소(노트북)
+  //static const String _baseUrl = 'http://192.168.173.229:5000'; // 로컬 서버 주소(핫스팟)
+  static const String _baseUrl = 'http://192.168.55.92:5000'; // 로컬 서버 주소(데스크탑)
+
   static const String _userKey = 'user_data';
   static const String _tokenKey = 'auth_token';
 
