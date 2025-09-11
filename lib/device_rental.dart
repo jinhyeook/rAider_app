@@ -24,6 +24,7 @@ class _NaverMapAppState extends State<NaverMapApp> {
   List<Map<String, dynamic>> _devices = [];
   bool _isLoadingDevices = false;
   Timer? _refreshTimer;
+  Map<String, dynamic>? _selectedDevice;
 
   @override
   void initState() {
@@ -139,9 +140,12 @@ class _NaverMapAppState extends State<NaverMapApp> {
               // 같은 마커 클릭 시 해제
               _selectedMarkerId = null;
               _showRentButton = false;
+              _selectedDevice = null;
             } else {
               _selectedMarkerId = marker.info.id;
               _showRentButton = true;
+              // 선택된 기기 정보 저장
+              _selectedDevice = device;
             }
           });
         });
@@ -162,6 +166,19 @@ class _NaverMapAppState extends State<NaverMapApp> {
         return Icons.electric_scooter;
       default:
         return Icons.location_on;
+    }
+  }
+
+  /// 배터리 레벨에 따른 색상 반환
+  Color _getBatteryColor(dynamic batteryLevel) {
+    final level = batteryLevel is int ? batteryLevel : 0;
+    
+    if (level >= 50) {
+      return Colors.green; // 50% 이상: 녹색
+    } else if (level >= 20) {
+      return Colors.orange; // 20-49%: 주황색
+    } else {
+      return Colors.red; // 20% 미만: 빨간색
     }
   }
 
@@ -285,20 +302,98 @@ class _NaverMapAppState extends State<NaverMapApp> {
               ),
             ),
           ),
-          if (_showRentButton)
+          if (_showRentButton && _selectedDevice != null)
             Positioned(
               left: 16,
               right: 16,
               bottom: 32,
-              child: ElevatedButton(
-                onPressed: _navigateToHomeScreen,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF0F5C31),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  textStyle: const TextStyle(fontSize: 18),
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
-                child: const Text('Rent'),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // 기기 정보 표시
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '${_selectedDevice!['device_type'] ?? '기기'}',
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF0F5C31),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'ID: ${_selectedDevice!['device_id'] ?? 'N/A'}',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ],
+                        ),
+                        // 배터리 정보 표시
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: _getBatteryColor(_selectedDevice!['battery_level']),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.battery_std,
+                                color: Colors.white,
+                                size: 16,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                '${_selectedDevice!['battery_level'] ?? 0}%',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    // Rent 버튼
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: _navigateToHomeScreen,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF0F5C31),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          textStyle: const TextStyle(fontSize: 18),
+                        ),
+                        child: const Text('Rent'),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
         ],

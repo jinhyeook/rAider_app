@@ -127,6 +127,14 @@ class _YoloRealTimeViewExampleState extends State<YoloRealTimeViewExample> {
           // imageToFile(data);
         },
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.pop(context);
+        },
+        backgroundColor: Colors.green,
+        child: const Icon(Icons.home, color: Colors.white),
+        tooltip: '홈으로 돌아가기',
+      ),
     );
   }
 

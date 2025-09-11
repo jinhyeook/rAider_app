@@ -29,10 +29,13 @@ class HomeScreen extends StatelessWidget {
         title: const Text('rAider'),
         centerTitle: true,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
+          TextButton.icon(
+            icon: const Icon(Icons.logout, color: Color(0xFF0F5C31)),
+            label: const Text(
+              'logout',
+              style: TextStyle(color: Color(0xFF0F5C31)),
+            ),
             onPressed: () => _logout(context),
-            tooltip: '로그아웃',
           ),
         ],
       ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'home.dart';
 import 'auth_service.dart';
+import 'signup.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -143,6 +144,35 @@ class _LoginScreenState extends State<LoginScreen> {
                     : const Text('Login', style: TextStyle(fontSize: 18)),
               ),
               const SizedBox(height: 20),
+              TextButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const SignupScreen()),
+                  );
+                },
+                child: const Text(
+                  '계정이 없으신가요? 회원가입',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Color(0xFF0F5C31),
+                    decoration: TextDecoration.underline,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                child: const Text(
+                  '뒤로가기',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey,
+                  ),
+                ),
+              ),
 
               // 홈 화면으로 이동하는 디버그 버튼
               /*

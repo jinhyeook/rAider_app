@@ -20,6 +20,8 @@ class _IdCardOcrPageState extends State<IdCardOcrPage> {
   File? _croppedImageFile;
   String _ocrResult = '';
   bool _isProcessing = false;
+  bool _isVerifying = false;
+  Map<String, String>? _parsedOcrData;
 
   final double guideBoxRatio = 1.585; // 신분증 비율
   final double guideBoxWidthPercent = 0.8; // 가이드박스 가로 화면대비 비율
@@ -30,10 +32,24 @@ class _IdCardOcrPageState extends State<IdCardOcrPage> {
     _initCamera();
   }
 
+  @override
+  void dispose() {
+    _controller?.dispose();
+    super.dispose();
+  }
+
   Future<void> _initCamera() async {
     _cameras = await availableCameras();
-    _controller = CameraController(_cameras![0], ResolutionPreset.high);
+    _controller = CameraController(
+      _cameras![0], 
+      ResolutionPreset.high,
+      enableAudio: false,  // 오디오 비활성화
+    );
     await _controller!.initialize();
+    
+    // 플래시를 명시적으로 끄기
+    await _controller!.setFlashMode(FlashMode.off);
+    
     setState(() {});
   }
 
@@ -112,10 +128,12 @@ class _IdCardOcrPageState extends State<IdCardOcrPage> {
         final jsonResponse = jsonDecode(response.body);
         setState(() {
           _ocrResult = JsonEncoder.withIndent('  ').convert(jsonResponse);
+          _parsedOcrData = _parseOcrResult(jsonResponse);
         });
       } else {
         setState(() {
           _ocrResult = 'server error: ${response.statusCode}';
+          _parsedOcrData = null;
         });
       }
     } catch (e) {
@@ -125,6 +143,88 @@ class _IdCardOcrPageState extends State<IdCardOcrPage> {
     } finally {
       setState(() { _isProcessing = false; });
     }
+  }
+
+  // OCR 결과에서 운전면허증 번호와 이름 파싱
+  Map<String, String>? _parseOcrResult(Map<String, dynamic> ocrResponse) {
+    try {
+      String? licenseNumber;
+      String? name;
+      String? idNumber;
+
+      // OCR 응답에서 필요한 정보 추출
+      if (ocrResponse.containsKey('번호')) {
+        licenseNumber = ocrResponse['번호'].toString().trim();
+      }
+      if (ocrResponse.containsKey('이름')) {
+        name = ocrResponse['이름'].toString().trim();
+      }
+      if (ocrResponse.containsKey('주민번호')) {
+        idNumber = ocrResponse['주민번호'].toString().trim();
+      }
+
+      if (licenseNumber != null && name != null) {
+        return {
+          'license_number': licenseNumber,
+          'name': name,
+          'id_number': idNumber ?? '',
+        };
+      }
+      return null;
+    } catch (e) {
+      print('OCR 파싱 오류: $e');
+      return null;
+    }
+  }
+
+  // DB에서 사용자 정보 확인
+  Future<bool> _verifyUserInfo() async {
+    if (_parsedOcrData == null) return false;
+
+    setState(() { _isVerifying = true; });
+
+    try {
+      final response = await http.post(
+        Uri.parse('http://192.168.55.92:5000/api/auth/verify-user-license'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'name': _parsedOcrData!['name'],
+          'driver_license': _parsedOcrData!['license_number'],
+        }),
+      );
+
+      print('응답 상태 코드: ${response.statusCode}');
+      print('응답 본문: ${response.body}');
+      
+      if (response.statusCode == 200) {
+        final result = jsonDecode(response.body);
+        return result['verified'] == true;
+      } else {
+        // 에러 응답도 파싱해서 로그 출력
+        try {
+          final errorResult = jsonDecode(response.body);
+          print('에러 응답: $errorResult');
+        } catch (e) {
+          print('에러 응답 파싱 실패: $e');
+        }
+      }
+      return false;
+    } catch (e) {
+      print('사용자 정보 확인 오류: $e');
+      return false;
+    } finally {
+      setState(() { _isVerifying = false; });
+    }
+  }
+
+  // 인증 성공 시 빈 페이지로 이동
+  void _navigateToEmptyPage() {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const EmptyPage(),
+      ),
+    );
   }
 
 
@@ -247,6 +347,7 @@ class _IdCardOcrPageState extends State<IdCardOcrPage> {
                         style: TextStyle(fontSize: 14, fontFamily: 'monospace'),
                       ),
                     ),
+                  // 첫 번째 행: 사진촬영, 서버전송, 다시촬영
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
@@ -293,6 +394,7 @@ class _IdCardOcrPageState extends State<IdCardOcrPage> {
                             _capturedFile = null;
                             _croppedImageFile = null;
                             _ocrResult = '';
+                            _parsedOcrData = null;
                           });
                         }
                             : null,
@@ -305,11 +407,115 @@ class _IdCardOcrPageState extends State<IdCardOcrPage> {
                       ),
                     ],
                   ),
+                  // 두 번째 행: 인증하기 버튼 (OCR 결과가 있을 때만 표시)
+                  if (_parsedOcrData != null) ...[
+                    SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        icon: _isVerifying 
+                            ? SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                ),
+                              )
+                            : Icon(Icons.verified_user),
+                        label: Text(_isVerifying ? '인증 중...' : '인증하기'),
+                        onPressed: _isVerifying ? null : () async {
+                          final isVerified = await _verifyUserInfo();
+                          if (isVerified) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('인증이 완료되었습니다!'),
+                                backgroundColor: Colors.green,
+                              ),
+                            );
+                            _navigateToEmptyPage();
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('인증에 실패했습니다. 정보를 다시 확인해주세요.'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _isVerifying ? Colors.grey[400] : Color(0xFF0F5C31),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                          padding: EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// 빈 페이지 클래스
+class EmptyPage extends StatelessWidget {
+  const EmptyPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('인증 완료'),
+        centerTitle: true,
+        backgroundColor: const Color(0xFF0F5C31),
+        foregroundColor: Colors.white,
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.check_circle,
+              size: 100,
+              color: Colors.green,
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              '인증이 완료되었습니다!',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF0F5C31),
+              ),
+            ),
+            const SizedBox(height: 10),
+            const Text(
+              '운전면허증 인증이 성공적으로 완료되었습니다.',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 30),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF0F5C31),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+              ),
+              child: const Text('확인'),
+            ),
+          ],
+        ),
       ),
     );
   }
