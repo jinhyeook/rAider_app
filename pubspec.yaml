@@ -81,6 +81,8 @@ flutter:
   assets:
     - assets/kick_report2.pt
     - assets/detect.pt
+    - assets/helmet_yolov5s_320_1.pt
+    - assets/yolov5s_320_drive.pt
 
 
   # An image asset can refer to one or more resolution-specific "variants", see

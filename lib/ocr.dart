@@ -7,6 +7,7 @@ import 'package:camera/camera.dart';
 import 'package:image/image.dart' as img;
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
+import 'helmet_detection.dart';
 
 class IdCardOcrPage extends StatefulWidget {
   @override
@@ -270,12 +271,12 @@ class _IdCardOcrPageState extends State<IdCardOcrPage> {
     }
   }
 
-  // 인증 성공 시 빈 페이지로 이동
-  void _navigateToEmptyPage() {
+  // 인증 성공 시 헬멧 검사 페이지로 이동
+  void _navigateToHelmetDetection() {
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
-        builder: (context) => const EmptyPage(),
+        builder: (context) => const HelmetDetectionPage(),
       ),
     );
   }
@@ -486,7 +487,7 @@ class _IdCardOcrPageState extends State<IdCardOcrPage> {
                                 backgroundColor: Colors.green,
                               ),
                             );
-                            _navigateToEmptyPage();
+                            _navigateToHelmetDetection();
                           } else {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(

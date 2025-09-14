@@ -4,7 +4,6 @@ import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:geolocator/geolocator.dart';
-import 'camera.dart';
 import 'home.dart';
 import 'ocr.dart';
 import 'device_service.dart';

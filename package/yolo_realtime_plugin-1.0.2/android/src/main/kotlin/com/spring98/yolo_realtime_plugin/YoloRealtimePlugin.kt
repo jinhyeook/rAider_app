@@ -195,8 +195,8 @@ class CameraView(
           it.setAnalyzer(executor, YoloImageAnalyzer())
         }
 
-      // Select the back camera
-      val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+      // Select the front camera
+      val cameraSelector = CameraSelector.DEFAULT_FRONT_CAMERA
 
       // Unbind any bound use cases before rebinding
       cameraProvider?.unbindAll()
