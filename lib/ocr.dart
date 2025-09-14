@@ -145,30 +145,65 @@ class _IdCardOcrPageState extends State<IdCardOcrPage> {
     }
   }
 
-  // OCR 결과에서 운전면허증 번호와 이름 파싱
+  // OCR 결과에서 운전면허증 번호, 이름, 주민번호 파싱
   Map<String, String>? _parseOcrResult(Map<String, dynamic> ocrResponse) {
     try {
       String? licenseNumber;
       String? name;
       String? idNumber;
 
+      print('OCR 응답 전체 데이터: $ocrResponse');
+
       // OCR 응답에서 필요한 정보 추출
       if (ocrResponse.containsKey('번호')) {
         licenseNumber = ocrResponse['번호'].toString().trim();
+        print('인식된 운전면허증 번호: $licenseNumber');
       }
       if (ocrResponse.containsKey('이름')) {
         name = ocrResponse['이름'].toString().trim();
+        print('인식된 이름: $name');
       }
       if (ocrResponse.containsKey('주민번호')) {
         idNumber = ocrResponse['주민번호'].toString().trim();
+        print('인식된 주민번호: $idNumber');
       }
 
-      if (licenseNumber != null && name != null) {
+      // 주민번호가 다른 키로 인식될 수 있으므로 추가 검색
+      if (idNumber == null || idNumber.isEmpty) {
+        for (String key in ocrResponse.keys) {
+          String value = ocrResponse[key].toString().trim();
+          // 주민번호 패턴 검사 (6자리-7자리 또는 13자리 숫자)
+          RegExp ssnPattern = RegExp(r'^\d{6}[-]?\d{7}$|^\d{13}$');
+          if (ssnPattern.hasMatch(value)) {
+            idNumber = value;
+            print('다른 키에서 주민번호 발견: $key = $value');
+            break;
+          }
+        }
+      }
+
+      // 주민번호 형식 정규화 (하이픈 추가)
+      if (idNumber != null && idNumber.isNotEmpty) {
+        // 하이픈이 없고 13자리 숫자인 경우 하이픈 추가
+        if (idNumber.length == 13 && !idNumber.contains('-')) {
+          idNumber = '${idNumber.substring(0, 6)}-${idNumber.substring(6)}';
+          print('주민번호 형식 정규화: $idNumber');
+        }
+      }
+
+      // OCR 응답의 모든 키를 확인
+      print('OCR 응답의 모든 키: ${ocrResponse.keys.toList()}');
+
+      // 주민번호와 이름이 모두 있어야 인증 가능
+      if (licenseNumber != null && name != null && idNumber != null && idNumber.isNotEmpty) {
+        print('모든 정보가 인식됨 - 인증 가능');
         return {
           'license_number': licenseNumber,
           'name': name,
-          'id_number': idNumber ?? '',
+          'id_number': idNumber,
         };
+      } else {
+        print('인식되지 않은 정보: licenseNumber=$licenseNumber, name=$name, idNumber=$idNumber');
       }
       return null;
     } catch (e) {
@@ -177,20 +212,38 @@ class _IdCardOcrPageState extends State<IdCardOcrPage> {
     }
   }
 
-  // DB에서 사용자 정보 확인
+  // DB에서 사용자 정보 확인 (주민번호 포함)
   Future<bool> _verifyUserInfo() async {
     if (_parsedOcrData == null) return false;
 
     setState(() { _isVerifying = true; });
 
     try {
+      // 전송할 데이터 확인
+      final ssnValue = _parsedOcrData!['id_number'];
+      final requestData = {
+        'name': _parsedOcrData!['name'],
+        'driver_license': _parsedOcrData!['license_number'],
+        'ssn': ssnValue, // 주민번호 추가
+      };
+      
+      print('서버로 전송할 데이터: $requestData');
+      print('_parsedOcrData 전체: $_parsedOcrData');
+      print('주민번호 값: $ssnValue');
+      print('주민번호 타입: ${ssnValue.runtimeType}');
+      print('주민번호가 null인가?: ${ssnValue == null}');
+      print('주민번호가 빈 문자열인가?: ${ssnValue == ""}');
+      
+      // 주민번호가 없으면 인증 불가
+      if (ssnValue == null || ssnValue.isEmpty) {
+        print('주민번호가 없어서 인증 불가');
+        return false;
+      }
+
       final response = await http.post(
         Uri.parse('http://192.168.55.92:5000/api/auth/verify-user-license'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'name': _parsedOcrData!['name'],
-          'driver_license': _parsedOcrData!['license_number'],
-        }),
+        body: jsonEncode(requestData),
       );
 
       print('응답 상태 코드: ${response.statusCode}');
@@ -449,6 +502,35 @@ class _IdCardOcrPageState extends State<IdCardOcrPage> {
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
                           padding: EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                         ),
+                      ),
+                    ),
+                  ],
+                  // OCR 결과가 있지만 주민번호가 인식되지 않은 경우 안내 메시지
+                  if (_ocrResult.isNotEmpty && _parsedOcrData == null) ...[
+                    SizedBox(height: 12),
+                    Container(
+                      width: double.infinity,
+                      padding: EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.orange[50],
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.orange[300]!),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.warning, color: Colors.orange[700], size: 24),
+                          SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              '주민번호가 인식되지 않았습니다.\n운전면허증을 다시 촬영해주세요.',
+                              style: TextStyle(
+                                color: Colors.orange[700],
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],

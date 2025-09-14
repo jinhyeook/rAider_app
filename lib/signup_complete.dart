@@ -17,6 +17,7 @@ class _SignupScreenState extends State<SignupScreen> {
   final TextEditingController _confirmPasswordController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _birthController = TextEditingController();
+  final TextEditingController _ssnController = TextEditingController();
   final TextEditingController _driverLicenseController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _passwordVisible = false;
@@ -32,6 +33,7 @@ class _SignupScreenState extends State<SignupScreen> {
     _confirmPasswordController.dispose();
     _phoneController.dispose();
     _birthController.dispose();
+    _ssnController.dispose();
     _driverLicenseController.dispose();
     super.dispose();
   }
@@ -53,6 +55,7 @@ class _SignupScreenState extends State<SignupScreen> {
       'password': _passwordController.text,
       'phone': _phoneController.text.trim(),
       'birth': _birthController.text.trim(),
+      'ssn': _ssnController.text.trim(),
       'driver_license': _driverLicenseController.text.trim(),
       'sex': _selectedSex,
     });
@@ -325,6 +328,37 @@ class _SignupScreenState extends State<SignupScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  const Text('SSN', style: TextStyle(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 5),
+                  TextFormField(
+                    controller: _ssnController,
+                    decoration: const InputDecoration(
+                      labelText: 'SSN (예: 901201-1234567)',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.badge),
+                    ),
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                      LengthLimitingTextInputFormatter(13), // 숫자만 13자
+                      SSNFormatter(),
+                    ],
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return '주민번호를 입력해주세요';
+                      }
+                      if (!RegExp(r'^\d{6}-\d{7}$').hasMatch(value)) {
+                        return '올바른 주민번호 형식이 아닙니다 (예: 901201-1234567)';
+                      }
+                      return null;
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                   const Text('Gender', style: TextStyle(fontWeight: FontWeight.bold)),
                   const SizedBox(height: 5),
                   Row(
@@ -468,6 +502,27 @@ class DateFormatter extends TextInputFormatter {
       );
     } else {
       final formatted = '${text.substring(0, 4)}-${text.substring(4, 6)}-${text.substring(6)}';
+      return TextEditingValue(
+        text: formatted,
+        selection: TextSelection.collapsed(offset: formatted.length),
+      );
+    }
+  }
+}
+
+// 주민번호 포맷터 클래스
+class SSNFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    final text = newValue.text;
+    
+    if (text.length <= 6) {
+      return newValue;
+    } else {
+      final formatted = '${text.substring(0, 6)}-${text.substring(6)}';
       return TextEditingValue(
         text: formatted,
         selection: TextSelection.collapsed(offset: formatted.length),

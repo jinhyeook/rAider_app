@@ -13,25 +13,30 @@ class SignupScreen extends StatefulWidget {
 class _SignupScreenState extends State<SignupScreen> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _emailDomainController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _birthController = TextEditingController();
+  final TextEditingController _ssnController = TextEditingController();
   final TextEditingController _driverLicenseController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _passwordVisible = false;
   bool _confirmPasswordVisible = false;
   bool _isLoading = false;
   String? _selectedSex = 'M';
+  String? _selectedEmailDomain = 'naver.com';
 
   @override
   void dispose() {
     _nameController.dispose();
     _emailController.dispose();
+    _emailDomainController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     _phoneController.dispose();
     _birthController.dispose();
+    _ssnController.dispose();
     _driverLicenseController.dispose();
     super.dispose();
   }
@@ -49,10 +54,11 @@ class _SignupScreenState extends State<SignupScreen> {
     final authService = AuthService();
     final result = await authService.register({
       'username': _nameController.text.trim(),
-      'email': _emailController.text.trim(),
+      'email': '${_emailController.text.trim()}@${_selectedEmailDomain}',
       'password': _passwordController.text,
       'phone': _phoneController.text.trim(),
       'birth': _birthController.text.trim(),
+      'ssn': _ssnController.text.trim(),
       'driver_license': _driverLicenseController.text.trim(),
       'sex': _selectedSex,
     });
@@ -99,7 +105,8 @@ class _SignupScreenState extends State<SignupScreen> {
     }
 
     final authService = AuthService();
-    final result = await authService.checkEmail(_emailController.text.trim());
+    final fullEmail = '${_emailController.text.trim()}@${_selectedEmailDomain}';
+    final result = await authService.checkEmail(fullEmail);
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -154,10 +161,11 @@ class _SignupScreenState extends State<SignupScreen> {
                   Row(
                     children: [
                       Expanded(
+                        flex: 2,
                         child: TextFormField(
                           controller: _emailController,
                           decoration: const InputDecoration(
-                            labelText: 'Email',
+                            labelText: '이메일 아이디',
                             border: OutlineInputBorder(),
                             prefixIcon: Icon(Icons.email),
                           ),
@@ -166,7 +174,7 @@ class _SignupScreenState extends State<SignupScreen> {
                             if (value == null || value.isEmpty) {
                               return '이메일을 입력해주세요';
                             }
-                            if (!RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$').hasMatch(value)) {
+                            if (!RegExp(r'^[a-zA-Z0-9._%+-]+$').hasMatch(value)) {
                               return '올바른 이메일 형식이 아닙니다';
                             }
                             return null;
@@ -174,16 +182,40 @@ class _SignupScreenState extends State<SignupScreen> {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      ElevatedButton(
-                        onPressed: _checkEmail,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                      const Text('@', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        flex: 2,
+                        child: DropdownButtonFormField<String>(
+                          value: _selectedEmailDomain,
+                          decoration: const InputDecoration(
+                            border: OutlineInputBorder(),
+                          ),
+                          items: const [
+                            DropdownMenuItem(value: 'naver.com', child: Text('naver.com')),
+                            DropdownMenuItem(value: 'gmail.com', child: Text('gmail.com')),
+                          ],
+                          onChanged: (String? newValue) {
+                            setState(() {
+                              _selectedEmailDomain = newValue;
+                            });
+                          },
                         ),
-                        child: const Text('중복확인'),
                       ),
                     ],
+                  ),
+                  const SizedBox(height: 10),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: ElevatedButton(
+                      onPressed: _checkEmail,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      ),
+                      child: const Text('중복확인'),
+                    ),
                   ),
                 ],
               ),
@@ -325,6 +357,37 @@ class _SignupScreenState extends State<SignupScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  const Text('SSN', style: TextStyle(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 5),
+                  TextFormField(
+                    controller: _ssnController,
+                    decoration: const InputDecoration(
+                      labelText: 'SSN (예: 901201-1234567)',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.badge),
+                    ),
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                      LengthLimitingTextInputFormatter(13), // 숫자만 13자
+                      SSNFormatter(),
+                    ],
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return '주민번호를 입력해주세요';
+                      }
+                      if (!RegExp(r'^\d{6}-\d{7}$').hasMatch(value)) {
+                        return '올바른 주민번호 형식이 아닙니다 (예: 901201-1234567)';
+                      }
+                      return null;
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                   const Text('Gender', style: TextStyle(fontWeight: FontWeight.bold)),
                   const SizedBox(height: 5),
                   Row(
@@ -370,8 +433,11 @@ class _SignupScreenState extends State<SignupScreen> {
                       border: OutlineInputBorder(),
                       prefixIcon: Icon(Icons.card_membership),
                     ),
+                    keyboardType: TextInputType.number,
                     inputFormatters: [
-                      LengthLimitingTextInputFormatter(17), // 최대 17자 (하이픈 포함)
+                      FilteringTextInputFormatter.digitsOnly,
+                      LengthLimitingTextInputFormatter(12), // 숫자만 12자
+                      DriverLicenseFormatter(),
                     ],
                     validator: (value) {
                       if (value == null || value.isEmpty) {
@@ -468,6 +534,60 @@ class DateFormatter extends TextInputFormatter {
       );
     } else {
       final formatted = '${text.substring(0, 4)}-${text.substring(4, 6)}-${text.substring(6)}';
+      return TextEditingValue(
+        text: formatted,
+        selection: TextSelection.collapsed(offset: formatted.length),
+      );
+    }
+  }
+}
+
+// 운전면허증 번호 포맷터 클래스
+class DriverLicenseFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    final text = newValue.text;
+    
+    if (text.length <= 2) {
+      return newValue;
+    } else if (text.length <= 4) {
+      final formatted = '${text.substring(0, 2)}-${text.substring(2)}';
+      return TextEditingValue(
+        text: formatted,
+        selection: TextSelection.collapsed(offset: formatted.length),
+      );
+    } else if (text.length <= 10) {
+      final formatted = '${text.substring(0, 2)}-${text.substring(2, 4)}-${text.substring(4)}';
+      return TextEditingValue(
+        text: formatted,
+        selection: TextSelection.collapsed(offset: formatted.length),
+      );
+    } else {
+      final formatted = '${text.substring(0, 2)}-${text.substring(2, 4)}-${text.substring(4, 10)}-${text.substring(10)}';
+      return TextEditingValue(
+        text: formatted,
+        selection: TextSelection.collapsed(offset: formatted.length),
+      );
+    }
+  }
+}
+
+// 주민번호 포맷터 클래스
+class SSNFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    final text = newValue.text;
+    
+    if (text.length <= 6) {
+      return newValue;
+    } else {
+      final formatted = '${text.substring(0, 6)}-${text.substring(6)}';
       return TextEditingValue(
         text: formatted,
         selection: TextSelection.collapsed(offset: formatted.length),
