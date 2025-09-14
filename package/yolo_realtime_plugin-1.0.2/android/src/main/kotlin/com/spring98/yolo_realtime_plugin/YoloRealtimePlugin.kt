@@ -81,6 +81,7 @@ class YoloRealtimePlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
         ACTIVE_CLASS_LABELS = activeClasses?.filterIsInstance<String>()?.toMutableList() ?: mutableListOf()
 
         val assetKey = binding.flutterAssets.getAssetFilePathByName(modelPath ?: "")
+        Constants.MODEL_PATH = modelPath ?: ""
         MODEL = PyTorchAndroid.loadModuleFromAsset(binding.applicationContext.assets, assetKey)
       }
 
@@ -195,8 +196,13 @@ class CameraView(
           it.setAnalyzer(executor, YoloImageAnalyzer())
         }
 
-      // Select the front camera
-      val cameraSelector = CameraSelector.DEFAULT_FRONT_CAMERA
+      // Select camera based on model type
+      // Use front camera for helmet detection, back camera for driving mode
+      val cameraSelector = if (Constants.MODEL_PATH.contains("helmet")) {
+        CameraSelector.DEFAULT_FRONT_CAMERA
+      } else {
+        CameraSelector.DEFAULT_BACK_CAMERA
+      }
 
       // Unbind any bound use cases before rebinding
       cameraProvider?.unbindAll()
@@ -485,6 +491,9 @@ class Constants {
     var ACTIVE_CLASS_LABELS:MutableList<String> = mutableListOf()
 
     var MODEL: Module? = null
+    
+    // 모델 경로 저장
+    var MODEL_PATH: String = ""
   }
 
 }

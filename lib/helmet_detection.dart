@@ -152,9 +152,9 @@ class _HelmetDetectionPageState extends State<HelmetDetectionPage> {
               child: yoloController != null
                   ? YoloRealTimeView(
                       width: MediaQuery.of(context).size.width,
-                      height: MediaQuery.of(context).size.height * 0.6,
+                      height: MediaQuery.of(context).size.height * 0.5, // 높이 조정
                       controller: yoloController!,
-                      drawBox: false,  // 바운딩 박스 그리기 비활성화
+                      drawBox: true,  // 바운딩 박스 그리기 활성화
                       captureBox: (boxes) {
                         _onDetectionResult(boxes);
                       },
@@ -167,73 +167,75 @@ class _HelmetDetectionPageState extends State<HelmetDetectionPage> {
           
           // 상태 표시 영역
           Expanded(
-            flex: 1,
+            flex: 2,
             child: Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(16), // 패딩 줄임
               color: Colors.grey[100],
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    _isHelmetDetected ? Icons.check_circle : Icons.warning,
-                    size: 60,
-                    color: _statusColor,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    _detectionStatus,
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
+              child: SingleChildScrollView( // 스크롤 가능하게 수정
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      _isHelmetDetected ? Icons.check_circle : Icons.warning,
+                      size: 50, // 아이콘 크기 줄임
                       color: _statusColor,
                     ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 20),
-                  
-                  // 다음 단계 버튼 (헬멧 착용 시에만 활성화)
-                  if (_isHelmetDetected)
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: _proceedToNextPage,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF0F5C31),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: const Text(
-                          '다음 단계로 진행',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                    const SizedBox(height: 12), // 간격 줄임
+                    Text(
+                      _detectionStatus,
+                      style: TextStyle(
+                        fontSize: 18, // 폰트 크기 줄임
+                        fontWeight: FontWeight.bold,
+                        color: _statusColor,
                       ),
-                    )
-                  else
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: _statusColor.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: _statusColor),
-                      ),
-                      child: Text(
-                        '헬멧을 착용하고 얼굴을 카메라에 비춰주세요',
-                        style: TextStyle(
-                          color: _statusColor,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
+                      textAlign: TextAlign.center,
                     ),
-                ],
+                    const SizedBox(height: 16), // 간격 줄임
+                  
+                    // 다음 단계 버튼 (헬멧 착용 시에만 활성화)
+                    if (_isHelmetDetected)
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: _proceedToNextPage,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF0F5C31),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12), // 패딩 줄임
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: const Text(
+                            '다음 단계로 진행',
+                            style: TextStyle(
+                              fontSize: 16, // 폰트 크기 줄임
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      )
+                    else
+                      Container(
+                        padding: const EdgeInsets.all(12), // 패딩 줄임
+                        decoration: BoxDecoration(
+                          color: _statusColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: _statusColor),
+                        ),
+                        child: Text(
+                          '헬멧을 착용하고 얼굴을 카메라에 비춰주세요',
+                          style: TextStyle(
+                            color: _statusColor,
+                            fontSize: 14, // 폰트 크기 줄임
+                            fontWeight: FontWeight.w500,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                  ],
+                ),
               ),
             ),
           ),
