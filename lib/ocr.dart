@@ -7,6 +7,7 @@ import 'package:camera/camera.dart';
 import 'package:image/image.dart' as img;
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'helmet_detection.dart';
 
 class IdCardOcrPage extends StatefulWidget {
@@ -252,6 +253,12 @@ class _IdCardOcrPageState extends State<IdCardOcrPage> {
       
       if (response.statusCode == 200) {
         final result = jsonDecode(response.body);
+        if (result['verified'] == true) {
+          // 인증 성공 시 사용자 ID를 SharedPreferences에 저장
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('user_id', result['user_id']);
+          print('사용자 ID 저장됨: ${result['user_id']}');
+        }
         return result['verified'] == true;
       } else {
         // 에러 응답도 파싱해서 로그 출력

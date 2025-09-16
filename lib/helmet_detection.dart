@@ -1,6 +1,11 @@
 import 'package:yolo_realtime_plugin/yolo_realtime_plugin.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'services/device_rental_service.dart';
+import 'services/location_service.dart';
+import 'home.dart';
+import 'driving_page.dart';
 
 class HelmetDetectionPage extends StatefulWidget {
   const HelmetDetectionPage({Key? key}) : super(key: key);
@@ -287,12 +292,12 @@ class HelmetSuccessPage extends StatelessWidget {
             ),
             const SizedBox(height: 30),
             ElevatedButton(
-              onPressed: () {
-                // 여기서 다음 페이지로 이동 (예: 주행 시작 페이지)
+              onPressed: () async {
+                // 헬멧 인증 완료 후 바로 주행 모드로 이동 (대여 시작 포함)
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => const YoloRealTimeViewExample(),
+                    builder: (context) => const DrivingPage(),
                   ),
                 );
               },
@@ -310,70 +315,3 @@ class HelmetSuccessPage extends StatelessWidget {
   }
 }
 
-// startDrive_new.dart에서 사용하는 클래스 import
-class YoloRealTimeViewExample extends StatefulWidget {
-  const YoloRealTimeViewExample({Key? key}) : super(key: key);
-
-  @override
-  State<YoloRealTimeViewExample> createState() => _YoloRealTimeViewExampleState();
-}
-
-class _YoloRealTimeViewExampleState extends State<YoloRealTimeViewExample> {
-  YoloRealtimeController? yoloController;
-
-  @override
-  void initState() {
-    super.initState();
-    _yoloInit();
-  }
-
-  Future<void> _yoloInit() async {
-    yoloController = YoloRealtimeController(
-      fullClasses: ["pothole", "car", "person", "animal"],
-      activeClasses: ["pothole", "car", "person", "animal"],
-      androidModelPath: 'assets/yolov5s_320_drive.pt',
-      androidModelWidth: 320,
-      androidModelHeight: 320,
-      androidConfThreshold: 0.5,
-      androidIouThreshold: 0.5,
-      iOSModelPath: 'yolov5s',
-      iOSConfThreshold: 0.5,
-    );
-
-    try {
-      await yoloController?.initialize();
-    } catch (e) {
-      print('ERROR: $e');
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (yoloController == null) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
-    }
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('주행 모드'),
-        backgroundColor: Colors.green,
-      ),
-      body: YoloRealTimeView(
-        width: MediaQuery.of(context).size.width,
-        height: MediaQuery.of(context).size.height - AppBar().preferredSize.height,
-        controller: yoloController!,
-        drawBox: true,
-        captureBox: (boxes) {
-          // 기존 주행 모드 로직
-        },
-        captureImage: (data) async {
-          // 기존 주행 모드 로직
-        },
-      ),
-    );
-  }
-}

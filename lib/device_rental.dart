@@ -4,6 +4,7 @@ import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'home.dart';
 import 'ocr.dart';
 import 'device_service.dart';
@@ -225,7 +226,14 @@ class _NaverMapAppState extends State<NaverMapApp> {
   }
 
   // 신분증 인증 페이지로 이동
-  void _navigateToHomeScreen() {
+  void _navigateToHomeScreen() async {
+    if (_selectedDevice != null) {
+      // 선택된 기기 정보를 SharedPreferences에 저장
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('selected_device_code', _selectedDevice!['device_id']);
+      print('선택된 기기 저장: ${_selectedDevice!['device_id']}');
+    }
+    
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => IdCardOcrPage()),
