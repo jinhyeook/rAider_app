@@ -32,7 +32,21 @@ class _DrivingPageState extends State<DrivingPage> {
   Future<void> _loadUserInfo() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      _userId = prefs.getString('user_id') ?? 'user_72f73bda'; // 실제 존재하는 사용자 ID
+      _userId = prefs.getString('user_id') ?? '';
+      
+      // 사용자 ID가 없으면 로그인 페이지로 이동
+      if (_userId.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('로그인이 필요합니다.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        Navigator.of(context).pop(); // 현재 페이지 닫기
+        return;
+      }
+      
+      print('현재 사용자: $_userId');
       
       // SharedPreferences에서 선택된 기기 코드 가져오기
       _deviceCode = prefs.getString('selected_device_code') ?? '';
