@@ -57,10 +57,13 @@ class _NaverMapAppState extends State<NaverMapApp> {
     try {
       final result = await _deviceService.getAvailableDevices();
       
+      log("기기 로드 결과: $result", name: "DeviceRental");
+      
       if (result['success']) {
         setState(() {
           _devices = List<Map<String, dynamic>>.from(result['devices']);
         });
+        log("로드된 기기 수: ${_devices.length}", name: "DeviceRental");
         _updateMapMarkers();
       } else {
         log("기기 로드 실패: ${result['message']}", name: "DeviceRental");
@@ -74,87 +77,166 @@ class _NaverMapAppState extends State<NaverMapApp> {
     }
   }
 
+  /// 강제 새로고침 (모든 마커 제거 후 다시 로드)
+  Future<void> _forceRefreshDevices() async {
+    log("강제 새로고침 시작", name: "DeviceRental");
+    
+    // 기존 마커들 강제 제거 (알려진 ID들로)
+    if (_mapControllerCompleter.isCompleted) {
+      try {
+        final controller = await _mapControllerCompleter.future;
+        
+        // 현재 _devices에 있는 마커들 제거
+        for (var device in _devices) {
+          final markerId = 'device_${device['device_id']}';
+          try {
+            await controller.deleteOverlay(NOverlayInfo(type: NOverlayType.marker, id: markerId));
+            log("강제 마커 제거: $markerId", name: "DeviceRental");
+          } catch (e) {
+            log("강제 마커 제거 실패: $markerId", name: "DeviceRental");
+          }
+        }
+        
+        // 추가로 가능한 기기 ID들도 시도
+        for (int i = 1; i <= 50; i++) {
+          final possibleIds = [
+            'device_025090400$i',
+            'device_025091400$i', 
+            'device_125090400$i',
+            'device_125091400$i',
+            'device_BUSAN_00$i',
+            'device_DEVICE_00$i',
+          ];
+          
+          for (var id in possibleIds) {
+            try {
+              await controller.deleteOverlay(NOverlayInfo(type: NOverlayType.marker, id: id));
+              log("추가 마커 제거: $id", name: "DeviceRental");
+            } catch (e) {
+              // 마커가 없으면 무시
+            }
+          }
+        }
+      } catch (e) {
+        log("강제 마커 제거 오류: $e", name: "DeviceRental");
+      }
+    }
+    
+    // 기기 목록 초기화
+    setState(() {
+      _devices = [];
+      _selectedMarkerId = null;
+      _showRentButton = false;
+      _selectedDevice = null;
+    });
+    
+    // 잠시 대기 후 새로 로드
+    await Future.delayed(const Duration(milliseconds: 100));
+    
+    // 사용자 위치 업데이트
+    await _showCurrentLocation();
+  }
+
   /// 지도에 마커 업데이트
   Future<void> _updateMapMarkers() async {
-    if (!_mapControllerCompleter.isCompleted) return;
+    if (!_mapControllerCompleter.isCompleted) {
+      log("지도 컨트롤러가 아직 준비되지 않음", name: "DeviceRental");
+      return;
+    }
     
     final controller = await _mapControllerCompleter.future;
+    log("마커 업데이트 시작: ${_devices.length}개 기기", name: "DeviceRental");
     
-    // 기존 기기 마커들 제거
+    // 기존 기기 마커들 제거 (알려진 ID들로)
     for (var device in _devices) {
       final markerId = 'device_${device['device_id']}';
       try {
         await controller.deleteOverlay(NOverlayInfo(type: NOverlayType.marker, id: markerId));
+        log("기존 마커 제거: $markerId", name: "DeviceRental");
       } catch (e) {
-        // 마커가 없을 수도 있음
+        log("마커 제거 실패 (없을 수 있음): $markerId", name: "DeviceRental");
       }
     }
 
     // 새로운 마커들 추가
+    int addedMarkers = 0;
     for (var device in _devices) {
       final latitude = device['latitude'] as double?;
       final longitude = device['longitude'] as double?;
       final deviceType = device['device_type'] as String?;
       final deviceId = device['device_id'] as String?;
       
+      log("기기 처리 중: $deviceId, lat: $latitude, lng: $longitude, type: $deviceType", name: "DeviceRental");
+      
       if (latitude != null && longitude != null && deviceId != null) {
-        final position = NLatLng(latitude, longitude);
+        // 좌표가 뒤바뀌어 있으므로 수정
+        final position = NLatLng(longitude, latitude);
         
         // 기기 타입에 따른 아이콘 선택
         final iconData = _getDeviceIcon(deviceType);
         
-        final marker = NMarker(
-          id: 'device_$deviceId',
-          position: position,
-          caption: NOverlayCaption(text: deviceType ?? 'Device'),
-          icon: await NOverlayImage.fromWidget(
-            context: context,
-            widget: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-                border: Border.all(color: const Color(0xFF0F5C31), width: 2),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.3),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
+        try {
+          // 기기 타입에 따른 아이콘이 있는 마커
+          final marker = NMarker(
+            id: 'device_$deviceId',
+            position: position,
+            caption: NOverlayCaption(text: deviceType ?? 'Device'),
+            icon: await NOverlayImage.fromWidget(
+              context: context,
+              widget: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: const Color(0xFF0F5C31), width: 2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.3),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  iconData,
+                  color: _getBatteryColor(device['battery_level']),
+                  size: 24,
+                ),
               ),
-              child: Icon(
-                iconData,
-                color: const Color(0xFF0F5C31),
-                size: 24,
-              ),
+              size: const Size(40, 40),
             ),
-            size: const Size(40, 40),
-          ),
-        );
+          );
 
-        marker.setOnTapListener((overlay) {
-          setState(() {
-            if (_selectedMarkerId == marker.info.id) {
-              // 같은 마커 클릭 시 해제
-              _selectedMarkerId = null;
-              _showRentButton = false;
-              _selectedDevice = null;
-            } else {
-              _selectedMarkerId = marker.info.id;
-              _showRentButton = true;
-              // 선택된 기기 정보 저장
-              _selectedDevice = device;
-            }
+          marker.setOnTapListener((overlay) {
+            log("마커 클릭: $deviceId", name: "DeviceRental");
+            setState(() {
+              if (_selectedMarkerId == marker.info.id) {
+                // 같은 마커 클릭 시 해제
+                _selectedMarkerId = null;
+                _showRentButton = false;
+                _selectedDevice = null;
+              } else {
+                _selectedMarkerId = marker.info.id;
+                _showRentButton = true;
+                // 선택된 기기 정보 저장
+                _selectedDevice = device;
+              }
+            });
           });
-        });
 
-        controller.addOverlay(marker);
+          await controller.addOverlay(marker);
+          addedMarkers++;
+          log("마커 추가 성공: $deviceId at ($latitude, $longitude)", name: "DeviceRental");
+        } catch (e) {
+          log("마커 추가 실패: $deviceId, 오류: $e", name: "DeviceRental");
+        }
+      } else {
+        log("기기 데이터 누락: $deviceId, lat: $latitude, lng: $longitude", name: "DeviceRental");
       }
     }
     
-    log("Updated ${_devices.length} device markers", name: "DeviceRental");
+    log("마커 업데이트 완료: $addedMarkers개 마커 추가됨", name: "DeviceRental");
   }
 
   /// 기기 타입에 따른 아이콘 반환
@@ -205,11 +287,44 @@ class _NaverMapAppState extends State<NaverMapApp> {
 
     final controller = await _mapControllerCompleter.future;
 
-    // 현재 위치 마커
+    // 기존 현재 위치 마커 제거
+    try {
+      await controller.deleteOverlay(NOverlayInfo(type: NOverlayType.marker, id: 'current_location_marker'));
+      log("기존 사용자 위치 마커 제거", name: "DeviceRental");
+    } catch (e) {
+      log("기존 사용자 위치 마커 제거 실패 (없을 수 있음)", name: "DeviceRental");
+    }
+
+    // 현재 위치 마커 (아이콘 포함)
     final currentMarker = NMarker(
       id: 'current_location_marker',
       position: currentLatLng,
       caption: NOverlayCaption(text: 'You'),
+      icon: await NOverlayImage.fromWidget(
+        context: context,
+        widget: Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: Colors.blue,
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.white, width: 3),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.3),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: const Icon(
+            Icons.person,
+            color: Colors.white,
+            size: 24,
+          ),
+        ),
+        size: const Size(40, 40),
+      ),
     );
     controller.addOverlay(currentMarker);
 
@@ -222,7 +337,7 @@ class _NaverMapAppState extends State<NaverMapApp> {
     // DB에서 기기 정보 로드
     await _loadDevices();
 
-    log("Added your location and loaded device markers from DB");
+    log("사용자 위치 마커 추가 및 기기 마커 로드 완료", name: "DeviceRental");
   }
 
   // 신분증 인증 페이지로 이동
@@ -256,10 +371,18 @@ class _NaverMapAppState extends State<NaverMapApp> {
               indoorEnable: true,
               locationButtonEnable: true,
               consumeSymbolTapEvents: false,
+              initialCameraPosition: NCameraPosition(
+                target: NLatLng(37.3125, 126.8083), // 안산시 단원구 선부광장
+                zoom: 14,
+              ),
             ),
             onMapReady: (controller) async {
               _mapControllerCompleter.complete(controller);
               log("NaverMap is ready!", name: "NaverMapApp");
+              
+              // 지도 준비 후 잠시 대기 후 기기 로드
+              await Future.delayed(const Duration(milliseconds: 500));
+              await _loadDevices();
             },
           ),
           // 새로고침 버튼
@@ -268,7 +391,7 @@ class _NaverMapAppState extends State<NaverMapApp> {
             right: 16,
             child: FloatingActionButton(
               mini: true,
-              onPressed: _loadDevices,
+              onPressed: _forceRefreshDevices,
               backgroundColor: const Color(0xFF0F5C31),
               child: _isLoadingDevices
                   ? const SizedBox(

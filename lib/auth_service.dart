@@ -125,6 +125,30 @@ class AuthService {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_userKey, jsonEncode(userData));
+      
+      // 사용자 데이터의 모든 키 출력
+      print('저장된 사용자 데이터 키들: ${userData.keys.toList()}');
+      print('저장된 사용자 데이터: $userData');
+      
+      // report_mode.dart에서 사용할 수 있도록 user_id도 별도로 저장
+      // 여러 가능한 키들을 확인
+      String? userId;
+      if (userData['USER_ID'] != null) {
+        userId = userData['USER_ID'];
+      } else if (userData['user_id'] != null) {
+        userId = userData['user_id'];
+      } else if (userData['id'] != null) {
+        userId = userData['id'];
+      } else if (userData['ID'] != null) {
+        userId = userData['ID'];
+      }
+      
+      if (userId != null) {
+        await prefs.setString('user_id', userId);
+        print('사용자 ID 저장: $userId');
+      } else {
+        print('사용자 ID를 찾을 수 없습니다. 사용 가능한 키: ${userData.keys.toList()}');
+      }
     } catch (e) {
       print('사용자 데이터 저장 오류: $e');
     }
@@ -136,6 +160,9 @@ class AuthService {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(_userKey);
       await prefs.remove(_tokenKey);
+      await prefs.remove('user_id');  // report_mode.dart에서 사용하는 키도 제거
+      await prefs.remove('selected_device_code');  // 선택된 기기 코드도 제거
+      print('사용자 데이터 완전 삭제 완료');
     } catch (e) {
       print('사용자 데이터 삭제 오류: $e');
     }
