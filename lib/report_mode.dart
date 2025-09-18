@@ -26,11 +26,12 @@ class _YoloRealTimeViewReportState extends State<YoloRealTimeViewReport> {
   DateTime lastAnnouncementTime = DateTime.now();
   Set<String> lastAnnouncedObjects = {};
   
-  // 자동 신고 시스템을 위한 변수들
-  DateTime? lastReportTime;
+  // 수동 신고 시스템을 위한 변수들
   String? _currentUserId;
   Uint8List? _capturedImageData;
   final String baseUrl = 'http://192.168.55.92:5000'; // Flask 서버 URL
+  bool _isProcessing = false; // 신고 처리 중 상태
+  bool _shouldCaptureImage = false; // 수동 촬영 시에만 이미지 캡처
 
   @override
   void initState() {
@@ -107,32 +108,46 @@ class _YoloRealTimeViewReportState extends State<YoloRealTimeViewReport> {
     }
   }
 
-  // 자동 신고 처리 함수
-  Future<void> _handleAutoReport(String violationType) async {
+  // 수동 촬영 및 신고 처리 함수
+  Future<void> _handleManualCapture() async {
     try {
+      if (_isProcessing) return; // 이미 처리 중이면 무시
+      
+      setState(() {
+        _isProcessing = true;
+      });
+
       // 사용자 ID 확인
       if (_currentUserId == null || _currentUserId!.isEmpty) {
         print('사용자 ID가 없어서 신고를 건너뜁니다.');
+        _showErrorSnackBar('로그인이 필요합니다.');
         return;
       }
 
-      // 중복 신고 방지 (30초 내 중복 방지)
-      final now = DateTime.now();
-      if (lastReportTime != null && 
-          now.difference(lastReportTime!).inSeconds < 30) {
-        print('중복 신고 방지: ${now.difference(lastReportTime!).inSeconds}초 전에 신고됨');
-        return;
-      }
-
-      print('헬멧 미착용 감지: $violationType');
+      print('수동 촬영 시작');
       
       // 1. 현재 위치 가져오기
       final position = await _getCurrentLocation();
       
-      // 2. 현재 화면 캡처
+      // 2. 수동 촬영 플래그 설정 및 화면 캡처
+      _shouldCaptureImage = true;
       await _captureCurrentScreen();
       
-      // 3. 신고 데이터 구성
+      if (_capturedImageData == null) {
+        _showErrorSnackBar('이미지 캡처에 실패했습니다.');
+        return;
+      }
+      
+      // 3. CNN 분류로 위반 유형 판단
+      final violationType = await _classifyImage(_capturedImageData!);
+      
+      if (violationType == null) {
+        _showErrorSnackBar('헬멧 미착용 위반이 감지되지 않았습니다.');
+        return;
+      }
+      
+      // 4. 신고 데이터 구성
+      final now = DateTime.now();
       final reportData = {
         'reporter_user_id': _currentUserId,
         'violation_type': violationType,
@@ -141,37 +156,70 @@ class _YoloRealTimeViewReportState extends State<YoloRealTimeViewReport> {
           'longitude': position.longitude,
         },
         'report_time': now.toIso8601String(),
-        'image_data': _capturedImageData != null ? base64Encode(_capturedImageData!) : null,
+        'image_data': base64Encode(_capturedImageData!),
       };
       
-      // 4. 서버로 전송
+      // 5. 서버로 전송
       await _sendReportToServer(reportData);
       
-      // 5. 마지막 신고 시간 업데이트
-      lastReportTime = now;
-      
       // 6. 사용자에게 알림
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('헬멧 미착용 위반이 자동으로 신고되었습니다.'),
-            backgroundColor: Colors.orange,
-            duration: const Duration(seconds: 3),
-          ),
-        );
+      _showSuccessSnackBar('헬멧 미착용 위반이 신고되었습니다.');
+      
+    } catch (e) {
+      print('수동 신고 처리 오류: $e');
+      _showErrorSnackBar('신고 처리 중 오류가 발생했습니다: $e');
+    } finally {
+      setState(() {
+        _isProcessing = false;
+        _shouldCaptureImage = false; // 촬영 플래그 리셋
+      });
+    }
+  }
+
+  // 최근 감지된 객체들을 저장할 변수
+  List<BoxModel> _lastDetectedBoxes = [];
+  
+  // YOLO 모델을 사용한 이미지 분류 함수 (실시간 감지 결과 기반)
+  Future<String?> _classifyImage(Uint8List imageData) async {
+    try {
+      print('YOLO 모델로 이미지 분류 시작');
+      
+      if (_lastDetectedBoxes.isEmpty) {
+        print('감지된 객체가 없음');
+        return null;
+      }
+
+      print('YOLO 감지 결과: ${_lastDetectedBoxes.length}개 객체');
+      
+      // 감지된 객체들 중에서 헬멧 미착용 위반 찾기
+      bool hasMultiViolation = false;
+      bool hasSingleViolation = false;
+      
+      for (final detection in _lastDetectedBoxes) {
+        print('감지된 객체: ${detection.label}, 신뢰도: ${detection.confidence}');
+        
+        if (detection.label == 'total_nohelmet_multi') {
+          hasMultiViolation = true;
+        } else if (detection.label == 'total_nohelmet_single') {
+          hasSingleViolation = true;
+        }
+      }
+      
+      // 위반 유형 결정 (multi가 우선순위)
+      if (hasMultiViolation) {
+        print('다중 헬멧 미착용 위반 감지');
+        return 'total_nohelmet_multi';
+      } else if (hasSingleViolation) {
+        print('단일 헬멧 미착용 위반 감지');
+        return 'total_nohelmet_single';
+      } else {
+        print('헬멧 미착용 위반이 감지되지 않음');
+        return null;
       }
       
     } catch (e) {
-      print('자동 신고 처리 오류: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('신고 처리 중 오류가 발생했습니다: $e'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 3),
-          ),
-        );
-      }
+      print('YOLO 이미지 분류 오류: $e');
+      return null;
     }
   }
 
@@ -199,14 +247,40 @@ class _YoloRealTimeViewReportState extends State<YoloRealTimeViewReport> {
     }
   }
 
-  // 현재 화면 캡처
+  // 현재 화면 캡처 (실제로는 이미지 데이터가 이미 captureImage 콜백에서 받아짐)
   Future<void> _captureCurrentScreen() async {
     try {
-      // YOLO 컨트롤러에서 현재 이미지 캡처 요청
-      // captureImage 콜백에서 _capturedImageData에 저장됨
       print('화면 캡처 요청');
+      // YOLO의 captureImage 콜백에서 이미 _capturedImageData에 저장되므로
+      // 여기서는 추가 작업이 필요하지 않음
     } catch (e) {
       print('화면 캡처 오류: $e');
+    }
+  }
+
+  // 성공 스낵바 표시
+  void _showSuccessSnackBar(String message) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
+  // 에러 스낵바 표시
+  void _showErrorSnackBar(String message) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
+      );
     }
   }
 
@@ -216,7 +290,7 @@ class _YoloRealTimeViewReportState extends State<YoloRealTimeViewReport> {
       print('신고 데이터 전송 시작: $reportData');
       
       final response = await http.post(
-        Uri.parse('$baseUrl/api/report/auto-submit'),
+        Uri.parse('$baseUrl/api/report/manual-submit'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(reportData),
       ).timeout(const Duration(seconds: 10));
@@ -224,7 +298,7 @@ class _YoloRealTimeViewReportState extends State<YoloRealTimeViewReport> {
       print('서버 응답: ${response.statusCode} - ${response.body}');
       
       if (response.statusCode == 200) {
-        print('자동 신고 전송 성공');
+        print('수동 신고 전송 성공');
       } else {
         throw Exception('서버 응답 오류: ${response.statusCode}');
       }
@@ -260,39 +334,24 @@ class _YoloRealTimeViewReportState extends State<YoloRealTimeViewReport> {
               controller: yoloController!,
               drawBox: true,
               captureBox: (boxes) {
-                if (boxes.isNotEmpty) {
-                  // 헬멧 미착용 감지 확인
-                  bool hasViolation = false;
-                  String violationType = '';
-                  
-                  for (final box in boxes) {
-                    if (box.label == 'total_nohelmet_multi') {
-                      hasViolation = true;
-                      violationType = 'total_nohelmet_multi';
-                      break;
-                    } else if (box.label == 'total_nohelmet_single') {
-                      hasViolation = true;
-                      violationType = 'total_nohelmet_single';
-                      break;
-                    }
-                  }
-                  
-                  // 위반 감지 시 자동 신고 처리
-                  if (hasViolation) {
-                    _handleAutoReport(violationType);
-                  }
-                }
+                // YOLO 감지 결과는 화면에만 표시 (자동 신고 안함)
+                // 실시간으로 감지된 객체들을 화면에 표시하고 저장
+                print('감지된 객체들: ${boxes.map((box) => box.label).toList()}');
+                
+                // 최근 감지된 객체들을 저장 (분류에 사용)
+                _lastDetectedBoxes = boxes;
               },
               captureImage: (data) async {
-                // 자동 신고 시 이미지 캡처
-                if (data != null) {
+                // 수동 촬영 시에만 이미지 캡처
+                if (_shouldCaptureImage && data != null) {
                   _capturedImageData = data;
+                  print('수동 이미지 캡처 완료: ${data.length} bytes');
                 }
               },
             ),
           ),
           
-          // 자동 신고 상태 표시 (상단)
+          // 수동 신고 모드 상태 표시 (상단)
           Positioned(
             top: 16,
             left: 16,
@@ -306,10 +365,10 @@ class _YoloRealTimeViewReportState extends State<YoloRealTimeViewReport> {
               child: const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.security, color: Colors.green, size: 20),
+                  Icon(Icons.camera_alt, color: Colors.blue, size: 20),
                   SizedBox(width: 8),
                   Text(
-                    '자동 신고 모드 활성화',
+                    '수동 신고 모드 - 촬영 버튼을 눌러 신고하세요',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 14,
@@ -317,6 +376,42 @@ class _YoloRealTimeViewReportState extends State<YoloRealTimeViewReport> {
                     ),
                   ),
                 ],
+              ),
+            ),
+          ),
+          
+          // 수동 촬영 버튼 (하단 중앙)
+          Positioned(
+            bottom: 50,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.3),
+                      blurRadius: 10,
+                      offset: const Offset(0, 5),
+                    ),
+                  ],
+                ),
+                child: FloatingActionButton(
+                  onPressed: _isProcessing ? null : _handleManualCapture,
+                  backgroundColor: _isProcessing ? Colors.grey : const Color(0xFF0F5C31),
+                  foregroundColor: Colors.white,
+                  child: _isProcessing
+                      ? const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : const Icon(Icons.camera_alt, size: 28),
+                ),
               ),
             ),
           ),
