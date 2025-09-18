@@ -26,3 +26,4 @@ class ServerConfig {
   static String getDeviceRentalUrl(String path) => baseUrl + deviceRentalEndpoint + path;
   static String getUserUrl(String path) => baseUrl + userEndpoint + path;
 }
+
