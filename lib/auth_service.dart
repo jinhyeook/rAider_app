@@ -1,13 +1,10 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'config/server_config.dart';
 
 class AuthService {
-  // static const String _baseUrl = 'http://3.34.48.22:5000'; // AWS 서버 주소
-  
-  //static const String _baseUrl = 'http://192.168.45.193:5000'; // 로컬 서버 주소(노트북)
-  //static const String _baseUrl = 'http://192.168.173.229:5000'; // 로컬 서버 주소(핫스팟)
-  static const String _baseUrl = 'http://192.168.55.92:5000'; // 로컬 서버 주소(데스크탑)
+  // ServerConfig를 통해 서버 주소 관리
 
   static const String _userKey = 'user_data';
   static const String _tokenKey = 'auth_token';
@@ -30,7 +27,7 @@ class AuthService {
   Future<Map<String, dynamic>> login(String email, String password) async {
     try {
       final response = await http.post(
-        Uri.parse('$_baseUrl/api/auth/login'),
+        Uri.parse(ServerConfig.getAuthUrl('/login')),
         headers: {
           'Content-Type': 'application/json',
         },
@@ -70,7 +67,7 @@ class AuthService {
   Future<Map<String, dynamic>> register(Map<String, dynamic> userData) async {
     try {
       final response = await http.post(
-        Uri.parse('$_baseUrl/api/auth/register'),
+        Uri.parse(ServerConfig.getAuthUrl('/register')),
         headers: {
           'Content-Type': 'application/json',
         },
@@ -172,7 +169,7 @@ class AuthService {
   Future<Map<String, dynamic>> checkEmail(String email) async {
     try {
       final response = await http.post(
-        Uri.parse('$_baseUrl/api/auth/check-email'),
+        Uri.parse(ServerConfig.getAuthUrl('/check-email')),
         headers: {
           'Content-Type': 'application/json',
         },
@@ -207,7 +204,7 @@ class AuthService {
   Future<Map<String, dynamic>> checkDriverLicense(String license) async {
     try {
       final response = await http.post(
-        Uri.parse('$_baseUrl/api/auth/verify-license'),
+        Uri.parse(ServerConfig.getAuthUrl('/verify-license')),
         headers: {
           'Content-Type': 'application/json',
         },

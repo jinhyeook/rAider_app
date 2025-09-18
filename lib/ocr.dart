@@ -9,6 +9,7 @@ import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'helmet_detection.dart';
+import 'config/server_config.dart';
 
 class IdCardOcrPage extends StatefulWidget {
   @override
@@ -119,9 +120,7 @@ class _IdCardOcrPageState extends State<IdCardOcrPage> {
       final base64Image = base64Encode(croppedBytes);
       final response = await http.post(
         // Uri.parse('http://3.34.48.22:5001/ocr'), // AWS 서버 주소
-        // Uri.parse('http://192.168.45.90:5000/ocr'), // 로컬 서버 주소(노트북)
-        // Uri.parse('http://192.168.173.229:5000/ocr'), // 로컬 서버 주소(핫스팟)
-        Uri.parse('http://192.168.55.92:5000/ocr'), // 로컬 서버 주소(데스크탑)
+        Uri.parse(ServerConfig.ocrUrl), // ServerConfig를 통해 서버 주소 관리
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'image': base64Image}),
       );
@@ -243,7 +242,7 @@ class _IdCardOcrPageState extends State<IdCardOcrPage> {
       }
 
       final response = await http.post(
-        Uri.parse('http://192.168.55.92:5000/api/auth/verify-user-license'),
+        Uri.parse(ServerConfig.getAuthUrl('/verify-user-license')),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(requestData),
       );

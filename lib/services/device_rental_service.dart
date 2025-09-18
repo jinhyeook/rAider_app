@@ -1,9 +1,10 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:geolocator/geolocator.dart';
+import '../config/server_config.dart';
 
 class DeviceRentalService {
-  static const String baseUrl = 'http://192.168.55.92:5000/api/device-rental'; // 실제 서버 IP로 변경 필요
+  // ServerConfig를 통해 서버 주소 관리
   
   // 기기 대여 시작
   static Future<Map<String, dynamic>> startRental({
@@ -14,7 +15,7 @@ class DeviceRentalService {
   }) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/start'),
+        Uri.parse(ServerConfig.deviceRentalUrl + '/start'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'user_id': userId,
@@ -48,11 +49,11 @@ class DeviceRentalService {
     required double longitude,
   }) async {
     try {
-      print('실시간 로그 전송 시도: $baseUrl/realtime-log');
+      print('실시간 로그 전송 시도: ${ServerConfig.deviceRentalUrl}/realtime-log');
       print('데이터: userId=$userId, deviceCode=$deviceCode, lat=$latitude, lng=$longitude');
       
       final response = await http.post(
-        Uri.parse('$baseUrl/realtime-log'),
+        Uri.parse(ServerConfig.deviceRentalUrl + '/realtime-log'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'user_id': userId,
@@ -86,7 +87,7 @@ class DeviceRentalService {
       print('대여 종료 요청: userId=$userId, deviceCode=$deviceCode, lat=$latitude, lng=$longitude');
       
       final response = await http.post(
-        Uri.parse('$baseUrl/end'),
+        Uri.parse(ServerConfig.deviceRentalUrl + '/end'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'user_id': userId,
@@ -123,7 +124,7 @@ class DeviceRentalService {
   static Future<Map<String, dynamic>> getRentalStatus(String deviceCode) async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/status/$deviceCode'),
+        Uri.parse(ServerConfig.deviceRentalUrl + '/status/$deviceCode'),
       );
       
       if (response.statusCode == 200) {
@@ -163,7 +164,7 @@ class DeviceRentalService {
   static Future<List<Map<String, dynamic>>> getAvailableDevices() async {
     try {
       final response = await http.get(
-        Uri.parse('http://192.168.55.92:5000/api/devices/available'),
+        Uri.parse(ServerConfig.getDeviceUrl('/available')),
         headers: {'Content-Type': 'application/json'},
       ).timeout(const Duration(seconds: 5));
       
@@ -183,7 +184,7 @@ class DeviceRentalService {
   static Future<bool> testConnection() async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/status/TEST'),
+        Uri.parse(ServerConfig.deviceRentalUrl + '/status/TEST'),
         headers: {'Content-Type': 'application/json'},
       ).timeout(const Duration(seconds: 5));
       

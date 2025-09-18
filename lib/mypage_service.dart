@@ -1,9 +1,10 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'auth_service.dart';
+import 'config/server_config.dart';
 
 class MyPageService {
-  static const String _baseUrl = 'http://192.168.55.92:5000'; // AuthService와 동일한 서버 주소
+  // ServerConfig를 통해 서버 주소 관리
 
   // 싱글톤 패턴
   static final MyPageService _instance = MyPageService._internal();
@@ -28,7 +29,7 @@ class MyPageService {
       final userId = currentUser['user_id'];
       
       final response = await http.get(
-        Uri.parse('$_baseUrl/api/user-info/$userId'),
+        Uri.parse(ServerConfig.getUserUrl('/user-info/$userId')),
         headers: {
           'Content-Type': 'application/json',
         },
@@ -72,7 +73,7 @@ class MyPageService {
       final userId = currentUser['user_id'];
       
       final response = await http.put(
-        Uri.parse('$_baseUrl/api/user-info/$userId'),
+        Uri.parse(ServerConfig.getUserUrl('/user-info/$userId')),
         headers: {
           'Content-Type': 'application/json',
         },

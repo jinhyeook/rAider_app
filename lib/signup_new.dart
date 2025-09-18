@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'login.dart';
+import 'config/server_config.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -24,11 +25,7 @@ class _SignupScreenState extends State<SignupScreen> {
   bool _isLoading = false;
   String? _selectedSex = 'M';
   
-  // API 서버 URL (실제 서버 주소로 변경)
-  //static const String _baseUrl = 'http://3.34.48.22:5000';
-  //static const String _baseUrl = 'http://192.168.45.193:5000'; // 로컬 서버 주소(노트북)
-  //static const String _baseUrl = 'http://192.168.173.229:5000'; // 로컬 서버 주소(핫스팟)
-  static const String _baseUrl = 'http://192.168.55.92:5000'; // 로컬 서버 주소(데스크탑)
+  // ServerConfig를 통해 서버 주소 관리
   
   @override
   void dispose() {
@@ -54,7 +51,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
     try {
       final response = await http.post(
-        Uri.parse('$_baseUrl/api/auth/register'),
+        Uri.parse(ServerConfig.getAuthUrl('/register')),
         headers: {
           'Content-Type': 'application/json',
         },
@@ -123,7 +120,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
     try {
       final response = await http.post(
-        Uri.parse('$_baseUrl/api/auth/check-email'),
+        Uri.parse(ServerConfig.getAuthUrl('/check-email')),
         headers: {
           'Content-Type': 'application/json',
         },

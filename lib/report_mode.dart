@@ -8,6 +8,7 @@ import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'config/server_config.dart';
 
 // import 'package:flutter_tts/flutter_tts.dart';
 
@@ -29,7 +30,7 @@ class _YoloRealTimeViewReportState extends State<YoloRealTimeViewReport> {
   // 수동 신고 시스템을 위한 변수들
   String? _currentUserId;
   Uint8List? _capturedImageData;
-  final String baseUrl = 'http://192.168.55.92:5000'; // Flask 서버 URL
+  // ServerConfig를 통해 서버 주소 관리
   bool _isProcessing = false; // 신고 처리 중 상태
   bool _shouldCaptureImage = false; // 수동 촬영 시에만 이미지 캡처
 
@@ -290,7 +291,7 @@ class _YoloRealTimeViewReportState extends State<YoloRealTimeViewReport> {
       print('신고 데이터 전송 시작: $reportData');
       
       final response = await http.post(
-        Uri.parse('$baseUrl/api/report/manual-submit'),
+        Uri.parse(ServerConfig.getUserUrl('/report/manual-submit')),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(reportData),
       ).timeout(const Duration(seconds: 10));
