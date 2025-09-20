@@ -34,14 +34,14 @@ class _HelmetDetectionPageState extends State<HelmetDetectionPage> {
       activeClasses: ['no_helmet', 'helmet'],
 
       // 안드로이드 설정
-      androidModelPath: 'assets/helmet_yolov5s_320_1.pt',
+      androidModelPath: 'assets/yolov5s_320_helmet.pt',
       androidModelWidth: 320,
       androidModelHeight: 320,
       androidConfThreshold: 0.5,
       androidIouThreshold: 0.5,
 
       // iOS 설정
-      iOSModelPath: 'helmet_yolov5s_320_1',
+      iOSModelPath: 'assets/yolov5s_320_helmet.pt',
       iOSConfThreshold: 0.5,
     );
 

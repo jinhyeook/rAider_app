@@ -219,12 +219,28 @@ class _IdCardOcrPageState extends State<IdCardOcrPage> {
     setState(() { _isVerifying = true; });
 
     try {
+      // 로그인된 사용자 ID 가져오기
+      final prefs = await SharedPreferences.getInstance();
+      final currentUserId = prefs.getString('user_id');
+      
+      if (currentUserId == null || currentUserId.isEmpty) {
+        print('로그인된 사용자 ID가 없습니다.');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('로그인이 필요합니다.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return false;
+      }
+
       // 전송할 데이터 확인
       final ssnValue = _parsedOcrData!['id_number'];
       final requestData = {
         'name': _parsedOcrData!['name'],
         'driver_license': _parsedOcrData!['license_number'],
         'ssn': ssnValue, // 주민번호 추가
+        'user_id': currentUserId, // 로그인된 사용자 ID 추가
       };
       
       print('서버로 전송할 데이터: $requestData');
@@ -286,6 +302,101 @@ class _IdCardOcrPageState extends State<IdCardOcrPage> {
     );
   }
 
+  // 정보 행을 구성하는 위젯
+  Widget _buildInfoRow(String label, String value) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey[200]!),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 100,
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey[700],
+              ),
+            ),
+          ),
+          SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              value,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.black87,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 누락된 정보 목록을 구성하는 위젯
+  List<Widget> _buildMissingInfoList() {
+    List<Widget> missingItems = [];
+    
+    // OCR 결과에서 필요한 정보들을 확인
+    if (_parsedOcrData == null) {
+      // 파싱된 데이터가 없으면 모든 정보가 누락된 것으로 간주
+      missingItems.addAll([
+        _buildMissingItem('이름'),
+        _buildMissingItem('운전면허증 번호'),
+        _buildMissingItem('주민번호'),
+      ]);
+    } else {
+      // 각 정보가 누락되었는지 확인 (null이거나 빈 문자열인 경우)
+      if (_parsedOcrData!['name'] == null || _parsedOcrData!['name']!.trim().isEmpty) {
+        missingItems.add(_buildMissingItem('이름'));
+      }
+      if (_parsedOcrData!['license_number'] == null || _parsedOcrData!['license_number']!.trim().isEmpty) {
+        missingItems.add(_buildMissingItem('운전면허증 번호'));
+      }
+      if (_parsedOcrData!['id_number'] == null || _parsedOcrData!['id_number']!.trim().isEmpty) {
+        missingItems.add(_buildMissingItem('주민번호'));
+      }
+    }
+    
+    return missingItems;
+  }
+
+  // 개별 누락 정보 항목을 구성하는 위젯
+  Widget _buildMissingItem(String itemName) {
+    return Container(
+      margin: EdgeInsets.only(bottom: 4),
+      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.red[50],
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: Colors.red[200]!),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.close, color: Colors.red[600], size: 16),
+          SizedBox(width: 8),
+          Text(
+            itemName,
+            style: TextStyle(
+              fontSize: 13,
+              color: Colors.red[700],
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+
 
   // 실제 은행앱 스타일 오버레이+가이드박스
   Widget _buildGuideOverlay(double screenW, double screenH) {
@@ -326,7 +437,7 @@ class _IdCardOcrPageState extends State<IdCardOcrPage> {
             ),
             child: Center(
               child: Text(
-                'Please fit your license here',
+                '운전면허증을 가이드라인에 맞춰주세요',
                 style: TextStyle(
                   color: Colors.white,
                   backgroundColor: Colors.black38,
@@ -354,7 +465,7 @@ class _IdCardOcrPageState extends State<IdCardOcrPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text("Driver License Verification "),
+        title: Text("운전면허증 본인 확인"),
         leading: BackButton(),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
@@ -391,21 +502,162 @@ class _IdCardOcrPageState extends State<IdCardOcrPage> {
                       padding: EdgeInsets.all(8.0),
                       child: CircularProgressIndicator(),
                     ),
-                  if (_ocrResult.isNotEmpty)
+                  // OCR 결과 표시 (개선된 UI)
+                  if (_ocrResult.isNotEmpty) ...[
                     Container(
                       width: double.infinity,
                       margin: EdgeInsets.only(bottom: 12),
-                      padding: EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: Colors.grey[100],
+                        color: Colors.white,
                         borderRadius: BorderRadius.circular(16),
-                        boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 8, spreadRadius: 2)],
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 10,
+                            spreadRadius: 2,
+                            offset: Offset(0, 2),
+                          ),
+                        ],
+                        border: Border.all(color: Colors.grey[200]!),
                       ),
-                      child: Text(
-                        _ocrResult,
-                        style: TextStyle(fontSize: 14, fontFamily: 'monospace'),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // 헤더
+                          Container(
+                            width: double.infinity,
+                            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            decoration: BoxDecoration(
+                              color: Color(0xFF0F5C31),
+                              borderRadius: BorderRadius.only(
+                                topLeft: Radius.circular(16),
+                                topRight: Radius.circular(16),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.credit_card, color: Colors.white, size: 20),
+                                SizedBox(width: 8),
+                                Text(
+                                  'OCR 인식 결과',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          // 내용
+                          Padding(
+                            padding: EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // 파싱된 데이터가 있으면 구조화된 형태로 표시
+                                if (_parsedOcrData != null) ...[
+                                  _buildInfoRow('이름', _parsedOcrData!['name'] ?? '인식되지 않음'),
+                                  SizedBox(height: 8),
+                                  _buildInfoRow('운전면허증 번호', _parsedOcrData!['license_number'] ?? '인식되지 않음'),
+                                  SizedBox(height: 8),
+                                  _buildInfoRow('주민번호', _parsedOcrData!['id_number'] ?? '인식되지 않음'),
+                                  SizedBox(height: 12),
+                                  Container(
+                                    width: double.infinity,
+                                    padding: EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: Colors.green[50],
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(color: Colors.green[200]!),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.check_circle, color: Colors.green[600], size: 20),
+                                        SizedBox(width: 8),
+                                        Text(
+                                          '모든 정보가 정상적으로 인식되었습니다',
+                                          style: TextStyle(
+                                            color: Colors.green[700],
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ] else ...[
+                                  // 파싱되지 않은 경우 누락된 정보 표시
+                                  Container(
+                                    width: double.infinity,
+                                    padding: EdgeInsets.all(16),
+                                    decoration: BoxDecoration(
+                                      color: Colors.orange[50],
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(color: Colors.orange[200]!),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Icon(Icons.warning, color: Colors.orange[600], size: 24),
+                                            SizedBox(width: 12),
+                                            Expanded(
+                                              child: Text(
+                                                '정보 인식에 문제가 있습니다',
+                                                style: TextStyle(
+                                                  color: Colors.orange[700],
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        SizedBox(height: 12),
+                                        SizedBox(height: 12),
+                                        Container(
+                                          width: double.infinity,
+                                          padding: EdgeInsets.all(12),
+                                          decoration: BoxDecoration(
+                                            color: Colors.orange[100],
+                                            borderRadius: BorderRadius.circular(6),
+                                          ),
+                                          child: Column(
+                                            children: [
+                                              Text(
+                                                '💡 촬영 Tip!',
+                                                style: TextStyle(
+                                                  fontSize: 14,
+                                                  color: Colors.orange[700],
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                              SizedBox(height: 4),
+                                              Text(
+                                                '• 운전면허증을 가이드에 맞춰주세요\n• 충분한 조명에서 촬영하세요\n• 글자가 선명하게 보이도록 하세요',
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: Colors.orange[600],
+                                                  height: 1.4,
+                                                ),
+                                                textAlign: TextAlign.left,
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ),
+                  ],
                   // 첫 번째 행: 사진촬영, 서버전송, 다시촬영
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -488,18 +740,20 @@ class _IdCardOcrPageState extends State<IdCardOcrPage> {
                           if (isVerified) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('인증이 완료되었습니다!'),
+                                content: Text('인증이 완료되었습니다!',textAlign: TextAlign.center,),
                                 backgroundColor: Colors.green,
                               ),
                             );
                             _navigateToHelmetDetection();
                           } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('인증에 실패했습니다. 정보를 다시 확인해주세요.'),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    '인증 실패(사용자의 면허증을 사용해주세요)', textAlign: TextAlign.center,
+                                  ),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
                           }
                         },
                         style: ElevatedButton.styleFrom(
@@ -545,65 +799,6 @@ class _IdCardOcrPageState extends State<IdCardOcrPage> {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-// 빈 페이지 클래스
-class EmptyPage extends StatelessWidget {
-  const EmptyPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('인증 완료'),
-        centerTitle: true,
-        backgroundColor: const Color(0xFF0F5C31),
-        foregroundColor: Colors.white,
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.check_circle,
-              size: 100,
-              color: Colors.green,
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              '인증이 완료되었습니다!',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF0F5C31),
-              ),
-            ),
-            const SizedBox(height: 10),
-            const Text(
-              '운전면허증 인증이 성공적으로 완료되었습니다.',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 30),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pop(context);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF0F5C31),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
-              ),
-              child: const Text('확인'),
-            ),
-          ],
-        ),
       ),
     );
   }

@@ -6,6 +6,7 @@ import 'auth_service.dart';
 import 'main.dart';
 import 'mypage.dart';
 import 'device_service.dart';
+import 'chat_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -216,6 +217,28 @@ class HomeScreen extends StatelessWidget {
               child: const Text('My Page', style: TextStyle(fontSize: 18)),
             ),
           ],
+        ),
+      ),
+      // 고객센터 챗봇 - 우하단 작은 원형 버튼
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const ChatScreen(),
+            ),
+          );
+        },
+        backgroundColor: const Color(0xFF0F5C31),
+        foregroundColor: Colors.white,
+        tooltip: '고객센터 챗봇',
+        icon: const Icon(Icons.chat, size: 18),
+        label: const Text(
+          '고객센터 챗봇',
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+          ),
         ),
       ),
     );

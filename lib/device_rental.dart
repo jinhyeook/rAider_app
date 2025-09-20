@@ -360,7 +360,7 @@ class _NaverMapAppState extends State<NaverMapApp> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Device Rent Map'),
+        title: const Text('기기 대여 지도'),
         centerTitle: true,
         backgroundColor: const Color(0xFF0F5C31),
       ),

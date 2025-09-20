@@ -88,13 +88,14 @@ class _DrivingPageState extends State<DrivingPage> {
 
   Future<void> _initializeDriving() async {
     yoloController = YoloRealtimeController(
-      fullClasses: ["pothole", "car", "person", "animal"],
-      activeClasses: ["pothole", "car", "person", "animal"],
-      androidModelPath: 'assets/yolov5s_320_drive.pt',
+      fullClasses: ["pothole", "car", "person", "animal", "manhole", "speed_bump"],
+      activeClasses: ["pothole", "car", "person", "animal", "manhole", "speed_bump"],
+      androidModelPath: 'assets/yolov5s_320_detect.pt',
+      //androidModelPath: 'assets/yolov5s_320_drive.pt',
       androidModelWidth: 320,
       androidModelHeight: 320,
-      androidConfThreshold: 0.5,
-      androidIouThreshold: 0.5,
+      androidConfThreshold: 0.7,
+      androidIouThreshold: 0.3,
       iOSModelPath: 'yolov5s',
       iOSConfThreshold: 0.5,
     );
@@ -253,6 +254,7 @@ class _DrivingPageState extends State<DrivingPage> {
           title: const Text('주행 모드'),
           backgroundColor: const Color(0xFF0F5C31),
           foregroundColor: Colors.white,
+          automaticallyImplyLeading: false,
         ),
         body: const Center(
           child: Column(
@@ -272,6 +274,7 @@ class _DrivingPageState extends State<DrivingPage> {
         title: const Text('주행 모드'),
         backgroundColor: const Color(0xFF0F5C31),
         foregroundColor: Colors.white,
+        automaticallyImplyLeading: false,
         actions: [
           if (_isRentalStarted)
             Container(
@@ -297,12 +300,8 @@ class _DrivingPageState extends State<DrivingPage> {
                     height: MediaQuery.of(context).size.height,
                     controller: yoloController!,
                     drawBox: true,
-                    captureBox: (boxes) {
-                      // 전방 탐지 로직
-                    },
-                    captureImage: (data) async {
-                      // 이미지 캡처 로직
-                    },
+                    captureBox: null, // 메모리 절약을 위해 비활성화
+                    captureImage: null, // 메모리 절약을 위해 비활성화
                   )
                 : const Center(
                     child: Text('카메라를 초기화할 수 없습니다'),
@@ -332,7 +331,7 @@ class _DrivingPageState extends State<DrivingPage> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     const Text(
-                      '안전한 주행을 위해 전방을 주시하세요',
+                      '카메라를 전방으로 향하게해 위험 요소를 탐지하세요!',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,

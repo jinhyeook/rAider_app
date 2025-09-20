@@ -165,7 +165,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         child: TextFormField(
                           controller: _emailController,
                           decoration: const InputDecoration(
-                            labelText: '이메일 아이디',
+                            labelText: 'Email',
                             border: OutlineInputBorder(),
                             prefixIcon: Icon(Icons.email),
                           ),
@@ -357,12 +357,12 @@ class _SignupScreenState extends State<SignupScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('SSN', style: TextStyle(fontWeight: FontWeight.bold)),
+                  const Text('Personal Number', style: TextStyle(fontWeight: FontWeight.bold)),
                   const SizedBox(height: 5),
                   TextFormField(
                     controller: _ssnController,
                     decoration: const InputDecoration(
-                      labelText: 'SSN (예: 901201-1234567)',
+                      labelText: 'Personal Number (예: 901201-1234567)',
                       border: OutlineInputBorder(),
                       prefixIcon: Icon(Icons.badge),
                     ),

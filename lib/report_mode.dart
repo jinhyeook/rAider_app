@@ -1,3 +1,4 @@
+
 // 무시: prefer_const_constructors
 
 import 'package:yolo_realtime_plugin/yolo_realtime_plugin.dart';
@@ -11,6 +12,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'config/server_config.dart';
 
 // import 'package:flutter_tts/flutter_tts.dart';
+
 
 class YoloRealTimeViewReport extends StatefulWidget {
   const YoloRealTimeViewReport({Key? key}) : super(key: key);
@@ -91,7 +93,7 @@ class _YoloRealTimeViewReportState extends State<YoloRealTimeViewReport> {
       activeClasses: activeClasses,
 
       // 안드로이드
-      androidModelPath: 'assets/kick_report2.pt',
+      androidModelPath: 'assets/yolov5s_320_report.pt',
       androidModelWidth: 320,
       androidModelHeight: 320,
       androidConfThreshold: 0.5,
@@ -132,10 +134,27 @@ class _YoloRealTimeViewReportState extends State<YoloRealTimeViewReport> {
       
       // 2. 수동 촬영 플래그 설정 및 화면 캡처
       _shouldCaptureImage = true;
-      await _captureCurrentScreen();
+      
+      // 이미지 캡처를 위한 대기 시간 추가
+      await Future.delayed(const Duration(milliseconds: 500));
+      
+      // YOLO 컨트롤러에서 직접 이미지 캡처 시도
+      if (yoloController != null) {
+        try {
+          // YOLO 컨트롤러의 captureImage 메서드가 있다면 사용
+          // 또는 다른 방법으로 이미지 캡처
+          print('YOLO 컨트롤러를 통한 이미지 캡처 시도');
+        } catch (e) {
+          print('YOLO 컨트롤러 이미지 캡처 오류: $e');
+        }
+      }
+      
+      // 추가 대기 시간
+      await Future.delayed(const Duration(milliseconds: 1000));
       
       if (_capturedImageData == null) {
-        _showErrorSnackBar('이미지 캡처에 실패했습니다.');
+        print('이미지 캡처 실패 - _capturedImageData가 null');
+        _showErrorSnackBar('이미지 캡처에 실패했습니다. 다시 시도해주세요.');
         return;
       }
       
@@ -164,11 +183,13 @@ class _YoloRealTimeViewReportState extends State<YoloRealTimeViewReport> {
       await _sendReportToServer(reportData);
       
       // 6. 사용자에게 알림
-      _showSuccessSnackBar('헬멧 미착용 위반이 신고되었습니다.');
+      final koreanClassName = _getKoreanClassName(violationType);
+      _showSuccessSnackBar('$koreanClassName 유형으로 신고되었습니다.');
       
     } catch (e) {
       print('수동 신고 처리 오류: $e');
-      _showErrorSnackBar('신고 처리 중 오류가 발생했습니다: $e');
+      
+      _showErrorSnackBar('신고에 실패했습니다.');
     } finally {
       setState(() {
         _isProcessing = false;
@@ -252,8 +273,18 @@ class _YoloRealTimeViewReportState extends State<YoloRealTimeViewReport> {
   Future<void> _captureCurrentScreen() async {
     try {
       print('화면 캡처 요청');
+      
+      // YOLO 컨트롤러가 있는지 확인
+      if (yoloController == null) {
+        print('YOLO 컨트롤러가 초기화되지 않음');
+        return;
+      }
+      
       // YOLO의 captureImage 콜백에서 이미 _capturedImageData에 저장되므로
       // 여기서는 추가 작업이 필요하지 않음
+      // 하지만 YOLO 컨트롤러가 활성화되어 있는지 확인
+      print('YOLO 컨트롤러 상태 확인 완료');
+      
     } catch (e) {
       print('화면 캡처 오류: $e');
     }
@@ -272,6 +303,18 @@ class _YoloRealTimeViewReportState extends State<YoloRealTimeViewReport> {
     }
   }
 
+  // 클래스 유형을 한국어로 변환
+  String _getKoreanClassName(String violationType) {
+    switch (violationType) {
+      case 'total_nohelmet_multi':
+        return '다중 헬멧 미착용';
+      case 'total_nohelmet_single':
+        return '단일 헬멧 미착용';
+      default:
+        return '헬멧 미착용';
+    }
+  }
+
   // 에러 스낵바 표시
   void _showErrorSnackBar(String message) {
     if (mounted) {
@@ -283,6 +326,53 @@ class _YoloRealTimeViewReportState extends State<YoloRealTimeViewReport> {
         ),
       );
     }
+  }
+
+  // 안내 메시지 표시 함수
+  void _showInfoDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text(
+          '신고 안내',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF0F5C31),
+          ),
+        ),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '• 5분 이내로 신고되어야 합니다.',
+              style: TextStyle(fontSize: 16),
+            ),
+            SizedBox(height: 8),
+            Text(
+              '• 본인을 신고할 수 없습니다.',
+              style: TextStyle(fontSize: 16),
+            ),
+          ],
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text(
+              '확인',
+              style: TextStyle(
+                color: Color(0xFF0F5C31),
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   // 서버로 신고 데이터 전송
@@ -347,6 +437,8 @@ class _YoloRealTimeViewReportState extends State<YoloRealTimeViewReport> {
                 if (_shouldCaptureImage && data != null) {
                   _capturedImageData = data;
                   print('수동 이미지 캡처 완료: ${data.length} bytes');
+                } else if (_shouldCaptureImage && data == null) {
+                  print('이미지 캡처 실패 - data가 null');
                 }
               },
             ),
@@ -413,6 +505,31 @@ class _YoloRealTimeViewReportState extends State<YoloRealTimeViewReport> {
                         )
                       : const Icon(Icons.camera_alt, size: 28),
                 ),
+              ),
+            ),
+          ),
+          
+          // 안내 버튼 (우하단)
+          Positioned(
+            bottom: 50,
+            right: 20,
+            child: Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.3),
+                    blurRadius: 10,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
+              ),
+              child: FloatingActionButton(
+                onPressed: _showInfoDialog,
+                backgroundColor: Colors.blue[600],
+                foregroundColor: Colors.white,
+                mini: true,
+                child: const Icon(Icons.info_outline, size: 20),
               ),
             ),
           ),

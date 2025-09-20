@@ -1,3 +1,4 @@
+
 // 무시: prefer_const_constructors
 
 import 'package:yolo_realtime_plugin/yolo_realtime_plugin.dart';
@@ -41,11 +42,12 @@ class _YoloRealTimeViewExampleState extends State<YoloRealTimeViewExample> {
       activeClasses: activeClasses,
 
       // 안드로이드
-      androidModelPath: 'assets/detect.pt',
+      androidModelPath: 'assets/yolov5s_320_detect.pt',
+      // androidModelPath: 'assets/yolov5s_320_drive.pt',
       androidModelWidth: 320,
       androidModelHeight: 320,
-      androidConfThreshold: 0.5,
-      androidIouThreshold: 0.5,
+      androidConfThreshold: 0.7,
+      androidIouThreshold: 0.3,
 
       // iOS
       iOSModelPath: 'yolov5s',
@@ -71,14 +73,18 @@ class _YoloRealTimeViewExampleState extends State<YoloRealTimeViewExample> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Drive Mode'),
+        title: const Text('개인 주행 모드'),
         backgroundColor: Colors.green,
+        automaticallyImplyLeading: false,
       ),
-      body: YoloRealTimeView(
-        width: MediaQuery.of(context).size.width,
-        height: MediaQuery.of(context).size.height - AppBar().preferredSize.height,
-        controller: yoloController!,
-        drawBox: true,
+      body: Stack(
+        children: [
+          // 카메라 뷰 (전체 화면)
+          YoloRealTimeView(
+            width: MediaQuery.of(context).size.width,
+            height: MediaQuery.of(context).size.height - AppBar().preferredSize.height,
+            controller: yoloController!,
+            drawBox: true,
         captureBox: (boxes) {
           if (boxes.isNotEmpty) {
             // 디바운싱을 위한 현재 시간 가져오기
@@ -126,6 +132,37 @@ class _YoloRealTimeViewExampleState extends State<YoloRealTimeViewExample> {
           /// 원하는 대로 이진 이미지를 처리하고 사용하세요.
           // imageToFile(data);
         },
+          ),
+          // 팝업 스타일 안내 문구
+          Positioned(
+            bottom: 100, // 홈 버튼 위쪽에 위치
+            left: 20,
+            right: 20,
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              decoration: BoxDecoration(
+                color: Colors.black87,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: const Text(
+                '카메라를 전방으로 향하게해 위험 요소를 탐지하세요!',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w400,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
@@ -135,6 +172,7 @@ class _YoloRealTimeViewExampleState extends State<YoloRealTimeViewExample> {
         child: const Icon(Icons.home, color: Colors.white),
         tooltip: '홈으로 돌아가기',
       ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 

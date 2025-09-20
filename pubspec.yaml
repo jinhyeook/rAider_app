@@ -79,10 +79,10 @@ flutter:
   #   - images/a_dot_burr.jpeg
   #   - images/a_dot_ham.jpeg
   assets:
-    - assets/kick_report2.pt
-    - assets/detect.pt
-    - assets/helmet_yolov5s_320_1.pt
+    - assets/yolov5s_320_detect.pt
     - assets/yolov5s_320_drive.pt
+    - assets/yolov5s_320_helmet.pt
+    - assets/yolov5s_320_report.pt
 
 
   # An image asset can refer to one or more resolution-specific "variants", see

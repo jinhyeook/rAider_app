@@ -24,8 +24,38 @@ void main() async {
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.detached) {
+      // 앱이 완전히 종료될 때 정리 작업
+      _cleanupResources();
+    }
+  }
+
+  void _cleanupResources() {
+    // Flutter 엔진 정리
+    WidgetsBinding.instance.removeObserver(this);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -163,20 +193,18 @@ class WelcomeScreen extends StatelessWidget {
               ),
               child: const Text('Sign Up', style: TextStyle(fontSize: 18)),
             ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                _showExitDialog(context);
-              },
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 15),
-                backgroundColor: Colors.red[600],
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('EXIT', style: TextStyle(fontSize: 18)),
-            ),
           ],
         ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          _showExitDialog(context);
+        },
+        backgroundColor: Colors.red[600],
+        foregroundColor: Colors.white,
+        mini: true,
+        tooltip: '앱 종료',
+        child: const Icon(Icons.power_settings_new, size: 20),
       ),
     );
   }
