@@ -19,8 +19,8 @@ class _YoloRealTimeViewExampleState extends State<YoloRealTimeViewExample> {
   YoloRealtimeController? yoloController;
   // 참고: 'flutter pub get' 실행 후, 다음 줄들의 주석을 해제하세요:
   late FlutterTts flutterTts;
-  DateTime lastAnnouncementTime = DateTime.now();
-  Set<String> lastAnnouncedObjects = {};
+  Timer? _detectionTimer;
+  bool _isDetectionEnabled = true;
 
   @override
   void initState() {
@@ -33,6 +33,7 @@ class _YoloRealTimeViewExampleState extends State<YoloRealTimeViewExample> {
     flutterTts.setVolume(1.0); // 최대 볼륨
 
     yoloInit();
+    _startDetectionTimer();
   }
 
   Future<void> yoloInit() async {
@@ -48,9 +49,7 @@ class _YoloRealTimeViewExampleState extends State<YoloRealTimeViewExample> {
       androidModelHeight: 320,
       androidConfThreshold: 0.7,
       androidIouThreshold: 0.3,
-
-      // iOS
-      iOSModelPath: 'yolov5s',
+      iOSModelPath: 'assets/yolov5s_320_detect.pt',
       iOSConfThreshold: 0.5,
     );
 
@@ -59,6 +58,14 @@ class _YoloRealTimeViewExampleState extends State<YoloRealTimeViewExample> {
     } catch (e) {
       print('ERROR: $e');
     }
+  }
+
+  void _startDetectionTimer() {
+    _detectionTimer = Timer.periodic(const Duration(seconds:3), (timer) { // 초 설정
+      setState(() {
+        _isDetectionEnabled = true;
+      }); 
+    });
   }
 
   @override
@@ -86,43 +93,28 @@ class _YoloRealTimeViewExampleState extends State<YoloRealTimeViewExample> {
             controller: yoloController!,
             drawBox: true,
         captureBox: (boxes) {
-          if (boxes.isNotEmpty) {
-            // 디바운싱을 위한 현재 시간 가져오기
-            final now = DateTime.now();
+          if (boxes.isNotEmpty && _isDetectionEnabled) {
+            // 박스에서 객체 이름 추출
+            final Set<String> detectedObjects = boxes
+                .map((box) => box.label)
+                .toSet();
 
-            // 마지막 안내 이후 최소 3초가 지났을 때만 안내
-            if (now.difference(lastAnnouncementTime).inSeconds >= 3) {
-              // 박스에서 객체 이름 추출
-              final Set<String> detectedObjects = boxes
-                  .map((box) => box.label)
-                  .toSet();
+            // 안내 텍스트 생성
+            String announcement = '';
 
-              // 마지막 안내와 다른 객체가 감지되었을 때만 안내
-              if (detectedObjects.difference(lastAnnouncedObjects).isNotEmpty) {
-                // 안내 텍스트 생성
-                String announcement = '';
+            // 감지된 객체를 안내에 추가
+            for (final object in detectedObjects) {
+              // 필요한 경우 객체 이름을 한국어로 번역
+              String koreanName = translateToKorean(object);
+              announcement += '$koreanName ';
+            }
 
-                // 감지된 객체를 안내에 추가
-                for (final object in detectedObjects) {
-                  // 필요한 경우 객체 이름을 한국어로 번역
-                  String koreanName = translateToKorean(object);
-                  announcement += '$koreanName, ';
-                }
-
-                // 끝에 있는 쉼표와 공백 제거
-                if (announcement.isNotEmpty) {
-                  announcement = announcement.substring(0, announcement.length - 2);
-
-                  flutterTts.speak(announcement);
-
-                  // 현재는 안내 내용만 출력
-                  print('감지된 객체: $announcement');
-
-                  // 마지막 안내 시간과 객체 업데이트
-                  lastAnnouncementTime = now;
-                  lastAnnouncedObjects = detectedObjects;
-                }
-              }
+            if (announcement.isNotEmpty) {
+              flutterTts.speak('$announcement 감지');
+              // 탐지 후 비활성화 (10초 후 다시 활성화됨)
+              setState(() {
+                _isDetectionEnabled = false;
+              });
             }
           }
         },
@@ -206,8 +198,21 @@ class _YoloRealTimeViewExampleState extends State<YoloRealTimeViewExample> {
         return '사람';
       case 'animal':
         return '동물';
+      case 'manhole':
+        return '맨홀';
+      case 'speed_bump':
+        return '과속방지턱';
       default:
         return objectName;
     }
+  }
+
+  @override
+  void dispose() {
+    // 타이머 정리
+    _detectionTimer?.cancel();
+    // FlutterTts 정리
+    flutterTts.stop();
+    super.dispose();
   }
 }

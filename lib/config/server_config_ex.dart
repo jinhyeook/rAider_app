@@ -1,4 +1,6 @@
 /// 서버 설정 파일
+// 파일 이름을 server_config.dart로 변경
+
 class ServerConfig {
   // 서버 기본 URL - 실제 서버 주소로 변경하세요
   static const String baseUrl = ''; 

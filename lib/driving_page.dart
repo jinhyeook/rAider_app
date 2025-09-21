@@ -2,6 +2,7 @@ import 'package:yolo_realtime_plugin/yolo_realtime_plugin.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 import 'services/device_rental_service.dart';
 import 'services/location_service.dart';
 import 'home.dart';
@@ -22,11 +23,55 @@ class _DrivingPageState extends State<DrivingPage> {
   String _userId = '';
   String _deviceCode = '';
   
+  // 음성 피드백을 위한 변수들
+  late FlutterTts flutterTts;
+  Timer? _detectionTimer;
+  bool _isDetectionEnabled = true;
+  
   @override
   void initState() {
     super.initState();
+    _initializeTts();
     _initializeDriving();
     _loadUserInfo();
+    _startDetectionTimer();
+  }
+
+  // FlutterTts 초기화
+  Future<void> _initializeTts() async {
+    flutterTts = FlutterTts();
+    await flutterTts.setLanguage("ko-KR"); // 한국어
+    await flutterTts.setSpeechRate(0.5); // 명확성을 위한 느린 발화 속도
+    await flutterTts.setVolume(1.0); // 최대 볼륨
+  }
+
+ 
+  void _startDetectionTimer() {
+    _detectionTimer = Timer.periodic(const Duration(seconds: 3), (timer) { // 초 설정
+      setState(() {
+        _isDetectionEnabled = true;
+      });
+    });
+  }
+
+  // 객체 이름을 한국어로 번역하는 함수
+  String translateToKorean(String objectName) {
+    switch (objectName.toLowerCase()) {
+      case 'pothole':
+        return '포트홀';
+      case 'car':
+        return '자동차';
+      case 'person':
+        return '사람';
+      case 'animal':
+        return '동물';
+      case 'manhole':
+        return '맨홀';
+      case 'speed_bump':
+        return '과속방지턱';
+      default:
+        return objectName;
+    }
   }
 
   Future<void> _loadUserInfo() async {
@@ -96,7 +141,7 @@ class _DrivingPageState extends State<DrivingPage> {
       androidModelHeight: 320,
       androidConfThreshold: 0.7,
       androidIouThreshold: 0.3,
-      iOSModelPath: 'yolov5s',
+      iOSModelPath: 'assets/yolov5s_320_detect.pt',
       iOSConfThreshold: 0.5,
     );
 
@@ -243,6 +288,10 @@ class _DrivingPageState extends State<DrivingPage> {
     if (_isRentalStarted) {
       LocationService.stopLocationTracking();
     }
+    // 타이머 정리
+    _detectionTimer?.cancel();
+    // FlutterTts 정리
+    flutterTts.stop();
     super.dispose();
   }
 
@@ -300,7 +349,30 @@ class _DrivingPageState extends State<DrivingPage> {
                     height: MediaQuery.of(context).size.height,
                     controller: yoloController!,
                     drawBox: true,
-                    captureBox: null, // 메모리 절약을 위해 비활성화
+                    captureBox: (boxes) {
+                      if (boxes.isNotEmpty && _isDetectionEnabled) {
+                        // 박스에서 객체 이름 추출
+                        final Set<String> detectedObjects = boxes
+                            .map((box) => box.label)
+                            .toSet();
+
+                        // 안내 텍스트 생성
+                        String announcement = '';
+
+                        // 감지된 객체를 안내에 추가
+                        for (final object in detectedObjects) {
+                          String koreanName = translateToKorean(object);
+                          announcement += '$koreanName ';
+                        }
+                        if (announcement.isNotEmpty) {
+                          flutterTts.speak('$announcement 감지');
+                          // 탐지 후 비활성화 (10초 후 다시 활성화됨)
+                          setState(() {
+                            _isDetectionEnabled = false;
+                          });
+                        }
+                      }
+                    },
                     captureImage: null, // 메모리 절약을 위해 비활성화
                   )
                 : const Center(
