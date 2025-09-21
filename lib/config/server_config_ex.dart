@@ -3,7 +3,7 @@
 
 class ServerConfig {
   // 서버 기본 URL - 실제 서버 주소로 변경하세요
-  static const String baseUrl = ''; 
+  static const String baseUrl = 'http://IP주소:5000'; 
 
   // API 엔드포인트들
   static const String authEndpoint = '/api/auth';
