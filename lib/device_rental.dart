@@ -26,6 +26,8 @@ class _NaverMapAppState extends State<NaverMapApp> {
   bool _isLoadingDevices = false;
   Timer? _refreshTimer;
   Map<String, dynamic>? _selectedDevice;
+  List<Map<String, dynamic>> _groupedDevices = [];
+  bool _showDeviceListPopup = false;
 
   @override
   void initState() {
@@ -238,17 +240,32 @@ class _NaverMapAppState extends State<NaverMapApp> {
           );
 
           marker.setOnTapListener((overlay) {
-            setState(() {
-              if (_selectedMarkerId == marker.info.id) {
+            // 해당 위치의 모든 기기 찾기
+            final deviceGroup = _findDevicesAtLocation(device);
+            
+            if (deviceGroup.length > 1) {
+              // 여러 기기가 있는 경우 팝업 표시
+              setState(() {
+                _groupedDevices = deviceGroup;
                 _selectedMarkerId = null;
                 _showRentButton = false;
                 _selectedDevice = null;
-              } else {
-                _selectedMarkerId = marker.info.id;
-                _showRentButton = true;
-                _selectedDevice = device;
-              }
-            });
+              });
+              _showDeviceSelectionPopup();
+            } else {
+              // 단일 기기인 경우 기존 로직
+              setState(() {
+                if (_selectedMarkerId == marker.info.id) {
+                  _selectedMarkerId = null;
+                  _showRentButton = false;
+                  _selectedDevice = null;
+                } else {
+                  _selectedMarkerId = marker.info.id;
+                  _showRentButton = true;
+                  _selectedDevice = device;
+                }
+              });
+            }
           });
 
           await controller.addOverlay(marker);
@@ -258,6 +275,82 @@ class _NaverMapAppState extends State<NaverMapApp> {
         }
       }
     }
+  }
+
+  /// 좌표를 소수점 4자리까지 반올림하여 그룹화 키 생성
+  String _getGroupKey(double latitude, double longitude) {
+    final latRounded = (latitude * 10000).round() / 10000;
+    final lngRounded = (longitude * 10000).round() / 10000;
+    return '${latRounded.toStringAsFixed(4)},${lngRounded.toStringAsFixed(4)}';
+  }
+
+  /// 기기들을 좌표 기반으로 그룹화
+  Map<String, List<Map<String, dynamic>>> _groupDevicesByLocation(List<Map<String, dynamic>> devices) {
+    final Map<String, List<Map<String, dynamic>>> groupedDevices = {};
+    
+    for (var device in devices) {
+      double? latitude;
+      double? longitude;
+      
+      try {
+        // DB에서 latitude와 longitude가 뒤바뀌어 있으므로 수정
+        if (device['latitude'] is String) {
+          longitude = double.parse(device['latitude'] as String);
+        } else {
+          longitude = device['latitude'] as double?;
+        }
+        
+        if (device['longitude'] is String) {
+          latitude = double.parse(device['longitude'] as String);
+        } else {
+          latitude = device['longitude'] as double?;
+        }
+      } catch (e) {
+        continue;
+      }
+      
+      if (latitude != null && longitude != null) {
+        final groupKey = _getGroupKey(latitude, longitude);
+        if (!groupedDevices.containsKey(groupKey)) {
+          groupedDevices[groupKey] = [];
+        }
+        groupedDevices[groupKey]!.add(device);
+      }
+    }
+    
+    return groupedDevices;
+  }
+
+  /// 특정 위치의 모든 기기 찾기
+  List<Map<String, dynamic>> _findDevicesAtLocation(Map<String, dynamic> targetDevice) {
+    double? targetLatitude;
+    double? targetLongitude;
+    
+    try {
+      // DB에서 latitude와 longitude가 뒤바뀌어 있으므로 수정
+      if (targetDevice['latitude'] is String) {
+        targetLongitude = double.parse(targetDevice['latitude'] as String);
+      } else {
+        targetLongitude = targetDevice['latitude'] as double?;
+      }
+      
+      if (targetDevice['longitude'] is String) {
+        targetLatitude = double.parse(targetDevice['longitude'] as String);
+      } else {
+        targetLatitude = targetDevice['longitude'] as double?;
+      }
+    } catch (e) {
+      return [targetDevice];
+    }
+    
+    if (targetLatitude == null || targetLongitude == null) {
+      return [targetDevice];
+    }
+    
+    final targetGroupKey = _getGroupKey(targetLatitude, targetLongitude);
+    final groupedDevices = _groupDevicesByLocation(_devices);
+    
+    return groupedDevices[targetGroupKey] ?? [targetDevice];
   }
 
   /// 기기 타입에 따른 아이콘 반환
@@ -361,6 +454,105 @@ class _NaverMapAppState extends State<NaverMapApp> {
     await _loadDevices();
 
     log("사용자 위치 마커 추가 및 기기 마커 로드 완료", name: "DeviceRental");
+  }
+
+
+  /// 기기 선택 팝업 표시
+  void _showDeviceSelectionPopup() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(
+            '기기 선택 (${_groupedDevices.length}개)',
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF0F5C31),
+            ),
+          ),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: _groupedDevices.length,
+              itemBuilder: (context, index) {
+                final device = _groupedDevices[index];
+                return Card(
+                  margin: const EdgeInsets.symmetric(vertical: 4),
+                  child: ListTile(
+                    leading: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: const Color(0xFF0F5C31), width: 2),
+                      ),
+                      child: Icon(
+                        _getDeviceIcon(device['device_type']),
+                        color: _getBatteryColor(device['battery_level']),
+                        size: 20,
+                      ),
+                    ),
+                    title: Text(
+                      '${device['device_type'] ?? '기기'}',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('ID: ${device['device_id'] ?? 'N/A'}'),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.battery_std,
+                              color: _getBatteryColor(device['battery_level']),
+                              size: 16,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              '${device['battery_level'] ?? 0}%',
+                              style: TextStyle(
+                                color: _getBatteryColor(device['battery_level']),
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      setState(() {
+                        _selectedDevice = device;
+                        _showRentButton = true;
+                        _showDeviceListPopup = false;
+                      });
+                    },
+                  ),
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                setState(() {
+                  _showDeviceListPopup = false;
+                });
+              },
+              child: const Text('취소'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   // QR코드 스캔 페이지로 이동
