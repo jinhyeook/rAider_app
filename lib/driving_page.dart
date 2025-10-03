@@ -158,18 +158,38 @@ class _DrivingPageState extends State<DrivingPage> {
   Future<void> _startRental() async {
     try {
       // 서버 연결 테스트
+      print('서버 연결 테스트 시작...');
       bool isServerConnected = await DeviceRentalService.testConnection();
+      print('서버 연결 상태: $isServerConnected');
       
       // 현재 위치 가져오기
       final position = await DeviceRentalService.getCurrentLocation();
       
-      // 기기 대여 시작
-      final result = await DeviceRentalService.startRental(
-        userId: _userId,
-        deviceCode: _deviceCode,
-        latitude: position.latitude,
-        longitude: position.longitude,
-      );
+      // 기기 대여 시작 (재시도 로직 포함)
+      Map<String, dynamic> result = {};
+      int retryCount = 0;
+      const maxRetries = 3;
+      
+      while (retryCount < maxRetries) {
+        try {
+          print('대여 시작 시도 ${retryCount + 1}/$maxRetries');
+          result = await DeviceRentalService.startRental(
+            userId: _userId,
+            deviceCode: _deviceCode,
+            latitude: position.latitude,
+            longitude: position.longitude,
+          );
+          print('대여 시작 성공: $result');
+          break;
+        } catch (e) {
+          retryCount++;
+          print('대여 시작 실패 (시도 $retryCount/$maxRetries): $e');
+          if (retryCount >= maxRetries) {
+            throw Exception('서버 연결 실패: $e');
+          }
+          await Future.delayed(const Duration(seconds: 2)); // 2초 대기 후 재시도
+        }
+      }
       
       setState(() {
         _isRentalStarted = true;
@@ -182,12 +202,9 @@ class _DrivingPageState extends State<DrivingPage> {
         deviceCode: _deviceCode,
       );
       
-      String message = result['offline_mode'] == true 
-          ? '오프라인 모드로 대여가 시작되었습니다!'
-          : '기기 대여가 시작되었습니다!';
-      
-      if (!isServerConnected) {
-        message += '\n(서버 연결 실패 - 오프라인 모드)';
+      String message = '기기 대여가 시작되었습니다!';
+      if (result['offline_mode'] == true) {
+        message = '오프라인 모드로 대여가 시작되었습니다!';
       }
       
       ScaffoldMessenger.of(context).showSnackBar(
@@ -248,16 +265,11 @@ class _DrivingPageState extends State<DrivingPage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(result['offline_mode'] == true ? '대여 종료 (오프라인)' : '대여 종료'),
+        title: const Text('대여 종료'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (result['offline_mode'] == true) ...[
-              const Text('오프라인 모드로 동작했습니다.', 
-                style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-            ],
             Text('사용 시간: ${result['usage_minutes']}분'),
             Text('이동 거리: ${result['moved_distance']}km'),
             Text('요금: ${result['fee']}원'),

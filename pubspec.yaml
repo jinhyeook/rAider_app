@@ -51,6 +51,9 @@ dependencies:
   
   # Shared preferences for storing user data
   shared_preferences: ^2.2.2
+  
+  # QR code scanner package
+  mobile_scanner: ^5.0.0
 
 dev_dependencies:
   flutter_test:

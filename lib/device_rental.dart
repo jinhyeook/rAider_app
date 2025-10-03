@@ -6,7 +6,7 @@ import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'home.dart';
-import 'ocr.dart';
+import 'qr.dart';
 import 'device_service.dart';
 
 class NaverMapApp extends StatefulWidget {
@@ -340,20 +340,33 @@ class _NaverMapAppState extends State<NaverMapApp> {
     log("사용자 위치 마커 추가 및 기기 마커 로드 완료", name: "DeviceRental");
   }
 
-  // 신분증 인증 페이지로 이동
+  // QR코드 스캔 페이지로 이동
   void _navigateToHomeScreen() async {
     if (_selectedDevice != null) {
       // 선택된 기기 정보를 SharedPreferences에 저장
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('selected_device_code', _selectedDevice!['device_id']);
+      await prefs.setString('selected_device_id', _selectedDevice!['device_id']);
       print('선택된 기기 저장: ${_selectedDevice!['device_id']}');
     }
     
-    Navigator.push(
+    // QR화면으로 이동 (지도 상태 유지)
+    final result = await Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => IdCardOcrPage()),
-      //MaterialPageRoute(builder: (context) => CameraTestPage()),
+      MaterialPageRoute(builder: (context) => const QrScanPage()),
     );
+    
+    // QR화면에서 돌아왔을 때 지도 상태 복원
+    if (result == 'back_from_qr') {
+      // 선택된 기기 상태 초기화
+      setState(() {
+        _selectedMarkerId = null;
+        _showRentButton = false;
+        _selectedDevice = null;
+      });
+      
+      // 기기 목록 새로고침
+      await _loadDevices();
+    }
   }
 
   @override

@@ -222,12 +222,24 @@ class _IdCardOcrPageState extends State<IdCardOcrPage> {
       // 로그인된 사용자 ID 가져오기
       final prefs = await SharedPreferences.getInstance();
       final currentUserId = prefs.getString('user_id');
+      final selectedDeviceCode = prefs.getString('selected_device_code');
       
       if (currentUserId == null || currentUserId.isEmpty) {
         print('로그인된 사용자 ID가 없습니다.');
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('로그인이 필요합니다.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return false;
+      }
+
+      if (selectedDeviceCode == null || selectedDeviceCode.isEmpty) {
+        print('선택된 기기 코드가 없습니다.');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('기기 QR코드를 먼저 스캔해주세요.'),
             backgroundColor: Colors.red,
           ),
         );
@@ -241,6 +253,7 @@ class _IdCardOcrPageState extends State<IdCardOcrPage> {
         'driver_license': _parsedOcrData!['license_number'],
         'ssn': ssnValue, // 주민번호 추가
         'user_id': currentUserId, // 로그인된 사용자 ID 추가
+        'device_id': selectedDeviceCode, // QR코드에서 스캔한 기기 ID 추가
       };
       
       print('서버로 전송할 데이터: $requestData');
