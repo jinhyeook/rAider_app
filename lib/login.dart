@@ -42,10 +42,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (result['success']) {
       // 로그인 성공
+      ScaffoldMessenger.of(context).clearSnackBars();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('로그인 성공! 환영합니다, ${result['user']['username']}님!'),
           backgroundColor: Colors.green,
+          duration: const Duration(seconds: 1),
         ),
       );
 
@@ -60,6 +62,7 @@ class _LoginScreenState extends State<LoginScreen> {
         SnackBar(
           content: Text(result['message']),
           backgroundColor: Colors.red,
+          duration: const Duration(milliseconds: 1500),
         ),
       );
     }

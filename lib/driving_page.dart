@@ -85,6 +85,7 @@ class _DrivingPageState extends State<DrivingPage> {
           const SnackBar(
             content: Text('로그인이 필요합니다.'),
             backgroundColor: Colors.red,
+            duration: Duration(milliseconds: 1500),
           ),
         );
         Navigator.of(context).pop(); // 현재 페이지 닫기
@@ -108,6 +109,7 @@ class _DrivingPageState extends State<DrivingPage> {
             const SnackBar(
               content: Text('사용 가능한 기기가 없습니다.'),
               backgroundColor: Colors.red,
+              duration: Duration(milliseconds: 1500),
             ),
           );
           return;
@@ -126,6 +128,7 @@ class _DrivingPageState extends State<DrivingPage> {
         SnackBar(
           content: Text('기기 정보 로드 실패: $e'),
           backgroundColor: Colors.red,
+          duration: const Duration(milliseconds: 1500),
         ),
       );
     }
@@ -207,10 +210,13 @@ class _DrivingPageState extends State<DrivingPage> {
         message = '오프라인 모드로 대여가 시작되었습니다!';
       }
       
+      // 기존 SnackBar 제거 후 성공 메시지 표시
+      ScaffoldMessenger.of(context).clearSnackBars();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(message),
-          duration: const Duration(seconds: 3),
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 1),
         ),
       );
       
@@ -219,6 +225,7 @@ class _DrivingPageState extends State<DrivingPage> {
         SnackBar(
           content: Text('대여 시작 실패: $e'),
           backgroundColor: Colors.red,
+          duration: const Duration(milliseconds: 1500),
         ),
       );
     }
@@ -256,6 +263,7 @@ class _DrivingPageState extends State<DrivingPage> {
         SnackBar(
           content: Text('대여 종료 실패: $e'),
           backgroundColor: Colors.red,
+          duration: const Duration(milliseconds: 1500),
         ),
       );
     }

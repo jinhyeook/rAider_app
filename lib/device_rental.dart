@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'home.dart';
 import 'qr.dart';
 import 'device_service.dart';
+import 'config/server_config.dart';
 
 class NaverMapApp extends StatefulWidget {
   const NaverMapApp({super.key});
@@ -48,8 +49,12 @@ class _NaverMapAppState extends State<NaverMapApp> {
 
   /// DB에서 사용 가능한 기기 목록 로드
   Future<void> _loadDevices() async {
-    if (_isLoadingDevices) return;
+    if (_isLoadingDevices) {
+      log("이미 로딩 중이므로 건너뜀", name: "DeviceRental");
+      return;
+    }
     
+    log("기기 로드 시작", name: "DeviceRental");
     setState(() {
       _isLoadingDevices = true;
     });
@@ -57,13 +62,20 @@ class _NaverMapAppState extends State<NaverMapApp> {
     try {
       final result = await _deviceService.getAvailableDevices();
       
-      log("기기 로드 결과: $result", name: "DeviceRental");
-      
-      if (result['success']) {
+      if (result['success'] == true) {
+        final devicesList = result['devices'];
+        
+        if (devicesList == null || devicesList.isEmpty) {
+          setState(() {
+            _devices = [];
+          });
+          return;
+        }
+        
         setState(() {
-          _devices = List<Map<String, dynamic>>.from(result['devices']);
+          _devices = List<Map<String, dynamic>>.from(devicesList);
         });
-        log("로드된 기기 수: ${_devices.length}", name: "DeviceRental");
+        
         _updateMapMarkers();
       } else {
         log("기기 로드 실패: ${result['message']}", name: "DeviceRental");
@@ -79,7 +91,6 @@ class _NaverMapAppState extends State<NaverMapApp> {
 
   /// 강제 새로고침 (모든 마커 제거 후 다시 로드)
   Future<void> _forceRefreshDevices() async {
-    log("강제 새로고침 시작", name: "DeviceRental");
     
     // 기존 마커들 강제 제거 (알려진 ID들로)
     if (_mapControllerCompleter.isCompleted) {
@@ -140,43 +151,61 @@ class _NaverMapAppState extends State<NaverMapApp> {
   /// 지도에 마커 업데이트
   Future<void> _updateMapMarkers() async {
     if (!_mapControllerCompleter.isCompleted) {
-      log("지도 컨트롤러가 아직 준비되지 않음", name: "DeviceRental");
       return;
     }
     
     final controller = await _mapControllerCompleter.future;
-    log("마커 업데이트 시작: ${_devices.length}개 기기", name: "DeviceRental");
     
-    // 기존 기기 마커들 제거 (알려진 ID들로)
+    // 기존 기기 마커들 제거
     for (var device in _devices) {
       final markerId = 'device_${device['device_id']}';
       try {
         await controller.deleteOverlay(NOverlayInfo(type: NOverlayType.marker, id: markerId));
-        log("기존 마커 제거: $markerId", name: "DeviceRental");
       } catch (e) {
-        log("마커 제거 실패 (없을 수 있음): $markerId", name: "DeviceRental");
+        // 마커가 없을 수 있음
       }
     }
 
     // 새로운 마커들 추가
     int addedMarkers = 0;
-    for (var device in _devices) {
-      final latitude = device['latitude'] as double?;
-      final longitude = device['longitude'] as double?;
+    
+    for (int i = 0; i < _devices.length; i++) {
+      var device = _devices[i];
+      
+      // 좌표 데이터 타입 변환
+      double? latitude;
+      double? longitude;
+      
+      try {
+        // DB에서 latitude와 longitude가 뒤바뀌어 있으므로 수정
+        if (device['latitude'] is String) {
+          longitude = double.parse(device['latitude'] as String);
+        } else {
+          longitude = device['latitude'] as double?;
+        }
+        
+        if (device['longitude'] is String) {
+          latitude = double.parse(device['longitude'] as String);
+        } else {
+          latitude = device['longitude'] as double?;
+        }
+      } catch (e) {
+        continue;
+      }
+      
       final deviceType = device['device_type'] as String?;
       final deviceId = device['device_id'] as String?;
       
-      log("기기 처리 중: $deviceId, lat: $latitude, lng: $longitude, type: $deviceType", name: "DeviceRental");
-      
       if (latitude != null && longitude != null && deviceId != null) {
-        // 좌표가 뒤바뀌어 있으므로 수정
-        final position = NLatLng(longitude, latitude);
+        // 좌표 유효성 검사
+        if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+          continue;
+        }
         
-        // 기기 타입에 따른 아이콘 선택
+        final position = NLatLng(latitude, longitude);
         final iconData = _getDeviceIcon(deviceType);
         
         try {
-          // 기기 타입에 따른 아이콘이 있는 마커
           final marker = NMarker(
             id: 'device_$deviceId',
             position: position,
@@ -209,17 +238,14 @@ class _NaverMapAppState extends State<NaverMapApp> {
           );
 
           marker.setOnTapListener((overlay) {
-            log("마커 클릭: $deviceId", name: "DeviceRental");
             setState(() {
               if (_selectedMarkerId == marker.info.id) {
-                // 같은 마커 클릭 시 해제
                 _selectedMarkerId = null;
                 _showRentButton = false;
                 _selectedDevice = null;
               } else {
                 _selectedMarkerId = marker.info.id;
                 _showRentButton = true;
-                // 선택된 기기 정보 저장
                 _selectedDevice = device;
               }
             });
@@ -227,16 +253,11 @@ class _NaverMapAppState extends State<NaverMapApp> {
 
           await controller.addOverlay(marker);
           addedMarkers++;
-          log("마커 추가 성공: $deviceId at ($latitude, $longitude)", name: "DeviceRental");
         } catch (e) {
-          log("마커 추가 실패: $deviceId, 오류: $e", name: "DeviceRental");
+          // 마커 추가 실패 시 무시
         }
-      } else {
-        log("기기 데이터 누락: $deviceId, lat: $latitude, lng: $longitude", name: "DeviceRental");
       }
     }
-    
-    log("마커 업데이트 완료: $addedMarkers개 마커 추가됨", name: "DeviceRental");
   }
 
   /// 기기 타입에 따른 아이콘 반환
@@ -263,6 +284,7 @@ class _NaverMapAppState extends State<NaverMapApp> {
       return Colors.red; // 20% 미만: 빨간색
     }
   }
+
 
   Future<void> _checkAndRequestLocationPermission() async {
     LocationPermission permission = await Geolocator.checkPermission();
@@ -334,6 +356,7 @@ class _NaverMapAppState extends State<NaverMapApp> {
       zoom: 14,
     ));
 
+
     // DB에서 기기 정보 로드
     await _loadDevices();
 
@@ -385,15 +408,12 @@ class _NaverMapAppState extends State<NaverMapApp> {
               locationButtonEnable: true,
               consumeSymbolTapEvents: false,
               initialCameraPosition: NCameraPosition(
-                target: NLatLng(37.3125, 126.8083), // 안산시 단원구 선부광장
+                target: NLatLng(37.3125, 126.8083),
                 zoom: 14,
               ),
             ),
             onMapReady: (controller) async {
               _mapControllerCompleter.complete(controller);
-              log("NaverMap is ready!", name: "NaverMapApp");
-              
-              // 지도 준비 후 잠시 대기 후 기기 로드
               await Future.delayed(const Duration(milliseconds: 500));
               await _loadDevices();
             },

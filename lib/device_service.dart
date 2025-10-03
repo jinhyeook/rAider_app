@@ -14,8 +14,6 @@ class DeviceService {
   /// is_used = 0인 기기들만 가져옵니다
   Future<Map<String, dynamic>> getAvailableDevices() async {
     try {
-      print('기기 목록 요청 시작: ${ServerConfig.getDeviceUrl('/available')}');
-      
       final response = await http.get(
         Uri.parse(ServerConfig.getDeviceUrl('/available')),
         headers: {
@@ -23,29 +21,23 @@ class DeviceService {
         },
       ).timeout(const Duration(seconds: 10));
 
-      print('서버 응답: ${response.statusCode}');
-      print('응답 본문: ${response.body}');
-
-      final responseData = jsonDecode(response.body);
-
       if (response.statusCode == 200) {
-        print('기기 목록 조회 성공: ${responseData.length}개');
+        final responseData = jsonDecode(response.body);
         return {
           'success': true,
           'devices': responseData,
         };
       } else {
-        print('서버 오류: ${response.statusCode}');
+        final responseData = jsonDecode(response.body);
         return {
           'success': false,
           'message': responseData['error'] ?? '기기 정보를 가져오는데 실패했습니다.',
         };
       }
     } catch (e) {
-      print('네트워크 오류 상세: $e');
       return {
         'success': false,
-        'message': '네트워크 오류가 발생했습니다. 다시 시도해주세요.\n오류: $e',
+        'message': '네트워크 오류가 발생했습니다. 다시 시도해주세요.',
       };
     }
   }

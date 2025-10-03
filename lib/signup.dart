@@ -65,10 +65,12 @@ class _SignupScreenState extends State<SignupScreen> {
 
     if (result['success']) {
       // 회원가입 성공
+      ScaffoldMessenger.of(context).clearSnackBars();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('회원가입이 완료되었습니다! 환영합니다, ${_nameController.text.trim()}님!'),
           backgroundColor: Colors.green,
+          duration: const Duration(seconds: 1),
         ),
       );
 

@@ -97,6 +97,7 @@ class _ChatScreenState extends State<ChatScreen> {
         const SnackBar(
           content: Text('챗봇이 아직 초기화되지 않았습니다.'),
           backgroundColor: Colors.orange,
+          duration: const Duration(milliseconds: 1500),
         ),
       );
       return;
@@ -141,6 +142,7 @@ class _ChatScreenState extends State<ChatScreen> {
         SnackBar(
           content: Text(response['message']),
           backgroundColor: Colors.red,
+          duration: const Duration(milliseconds: 1500),
           action: SnackBarAction(
             label: '재시도',
             textColor: Colors.white,
@@ -441,7 +443,7 @@ class _ChatScreenState extends State<ChatScreen> {
       const SnackBar(
         content: Text('새로운 대화를 시작합니다.'),
         backgroundColor: Color(0xFF0F5C31),
-        duration: Duration(seconds: 2),
+        duration: Duration(seconds: 1),
       ),
     );
   }

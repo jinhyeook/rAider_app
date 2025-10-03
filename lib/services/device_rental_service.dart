@@ -32,7 +32,6 @@ class DeviceRentalService {
       }
     } catch (e) {
       // 서버 연결 실패 시 오프라인 모드로 동작
-      print('서버 연결 실패, 오프라인 모드로 동작: $e');
       return {
         'message': '오프라인 모드로 대여가 시작되었습니다.',
         'rental_id': 'offline_${DateTime.now().millisecondsSinceEpoch}',
@@ -49,8 +48,6 @@ class DeviceRentalService {
     required double longitude,
   }) async {
     try {
-      print('실시간 로그 전송 시도: ${ServerConfig.deviceRentalUrl}/realtime-log');
-      print('데이터: userId=$userId, deviceCode=$deviceCode, lat=$latitude, lng=$longitude');
       
       final response = await http.post(
         Uri.parse(ServerConfig.deviceRentalUrl + '/realtime-log'),
@@ -63,15 +60,7 @@ class DeviceRentalService {
         }),
       ).timeout(const Duration(seconds: 10));
       
-      print('실시간 로그 응답: ${response.statusCode} - ${response.body}');
-      
-      if (response.statusCode == 200) {
-        print('실시간 로그 전송 성공');
-      } else {
-        print('실시간 로그 전송 실패: ${response.statusCode}');
-      }
     } catch (e) {
-      print('실시간 로그 전송 오류: $e');
       // 오류가 발생해도 예외를 다시 던지지 않음 (위치 추적은 계속 진행)
     }
   }
@@ -84,7 +73,6 @@ class DeviceRentalService {
     required double longitude,
   }) async {
     try {
-      print('대여 종료 요청: userId=$userId, deviceCode=$deviceCode, lat=$latitude, lng=$longitude');
       
       final response = await http.post(
         Uri.parse(ServerConfig.deviceRentalUrl + '/end'),
@@ -97,19 +85,14 @@ class DeviceRentalService {
         }),
       ).timeout(const Duration(seconds: 15));
       
-      print('대여 종료 응답: ${response.statusCode} - ${response.body}');
-      
       if (response.statusCode == 200) {
         final result = jsonDecode(response.body);
-        print('대여 종료 성공: $result');
         return result;
       } else {
-        print('대여 종료 실패: ${response.statusCode} - ${response.body}');
         throw Exception('대여 종료 실패: ${response.body}');
       }
     } catch (e) {
       // 서버 연결 실패 시 오프라인 모드로 동작
-      print('서버 연결 실패, 오프라인 모드로 종료: $e');
       return {
         'message': '오프라인 모드로 대여가 종료되었습니다.',
         'usage_minutes': 5, // 기본값
@@ -175,7 +158,6 @@ class DeviceRentalService {
         throw Exception('기기 목록 조회 실패: ${response.body}');
       }
     } catch (e) {
-      print('기기 목록 조회 오류: $e');
       return [];
     }
   }
@@ -190,7 +172,6 @@ class DeviceRentalService {
       
       return response.statusCode == 200 || response.statusCode == 404; // 404도 서버가 응답했다는 의미
     } catch (e) {
-      print('서버 연결 테스트 실패: $e');
       return false;
     }
   }

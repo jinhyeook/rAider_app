@@ -230,6 +230,7 @@ class _IdCardOcrPageState extends State<IdCardOcrPage> {
           const SnackBar(
             content: Text('로그인이 필요합니다.'),
             backgroundColor: Colors.red,
+            duration: const Duration(milliseconds: 1500),
           ),
         );
         return false;
@@ -241,6 +242,7 @@ class _IdCardOcrPageState extends State<IdCardOcrPage> {
           const SnackBar(
             content: Text('기기 QR코드를 먼저 스캔해주세요.'),
             backgroundColor: Colors.red,
+            duration: const Duration(milliseconds: 1500),
           ),
         );
         return false;
@@ -751,10 +753,13 @@ class _IdCardOcrPageState extends State<IdCardOcrPage> {
                         onPressed: _isVerifying ? null : () async {
                           final isVerified = await _verifyUserInfo();
                           if (isVerified) {
+                            // 기존 SnackBar 제거 후 성공 메시지 표시
+                            ScaffoldMessenger.of(context).clearSnackBars();
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text('인증이 완료되었습니다!',textAlign: TextAlign.center,),
                                 backgroundColor: Colors.green,
+                                duration: const Duration(seconds: 1),
                               ),
                             );
                             _navigateToHelmetDetection();
@@ -765,6 +770,7 @@ class _IdCardOcrPageState extends State<IdCardOcrPage> {
                                     '인증 실패(사용자의 면허증을 사용해주세요)', textAlign: TextAlign.center,
                                   ),
                                   backgroundColor: Colors.red,
+                                  duration: const Duration(milliseconds: 1500),
                                 ),
                               );
                           }

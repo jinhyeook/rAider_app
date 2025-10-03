@@ -9,12 +9,12 @@ import 'auth_service.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // FlutterNaverMap 초기화 (인스턴스로)
+  // FlutterNaverMap 초기화
   final naverMapSdk = FlutterNaverMap();
   await naverMapSdk.init(
     clientId: 'by4fsilwbn',
     onAuthFailed: (error) {
-      print('네이버맵 인증 실패: $error');
+      // 네이버맵 인증 실패 처리
     },
   );
 

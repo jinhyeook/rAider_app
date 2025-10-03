@@ -293,11 +293,13 @@ class _YoloRealTimeViewReportState extends State<YoloRealTimeViewReport> {
   // 성공 스낵바 표시
   void _showSuccessSnackBar(String message) {
     if (mounted) {
+      // 기존 SnackBar 제거 후 성공 메시지 표시
+      ScaffoldMessenger.of(context).clearSnackBars();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(message),
           backgroundColor: Colors.green,
-          duration: const Duration(seconds: 3),
+          duration: const Duration(seconds: 1),
         ),
       );
     }
@@ -322,7 +324,7 @@ class _YoloRealTimeViewReportState extends State<YoloRealTimeViewReport> {
         SnackBar(
           content: Text(message),
           backgroundColor: Colors.red,
-          duration: const Duration(seconds: 3),
+          duration: const Duration(milliseconds: 1500),
         ),
       );
     }

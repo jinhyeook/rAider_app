@@ -24,11 +24,9 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // 기기 대여 페이지로 이동 (DB에서 기기 정보 먼저 가져오기)
+  // 기기 대여 페이지로 이동
   Future<void> _navigateToDeviceRental(BuildContext context) async {
     try {
-      print('기기 대여 페이지 이동 시작');
-      
       // 로딩 표시
       showDialog(
         context: context,
@@ -42,18 +40,13 @@ class HomeScreen extends StatelessWidget {
       final deviceService = DeviceService();
       final result = await deviceService.getAvailableDevices();
       
-      print('기기 목록 조회 결과: $result');
-      
       // 로딩 다이얼로그 닫기
       Navigator.of(context).pop();
       
       if (result['success']) {
         final devices = List<Map<String, dynamic>>.from(result['devices']);
-        print('조회된 기기 수: ${devices.length}');
         
         if (devices.isNotEmpty) {
-          // 기기가 있으면 지도 페이지로 이동
-          print('지도 페이지로 이동');
           Navigator.push(
             context,
             MaterialPageRoute(
@@ -61,17 +54,13 @@ class HomeScreen extends StatelessWidget {
             ),
           );
         } else {
-          // 사용 가능한 기기가 없을 때
-          print('사용 가능한 기기 없음');
           _showNoDevicesDialog(context);
         }
       } else {
         // DB 연결 실패 시
-        print('DB 연결 실패: ${result['message']}');
         _showErrorDialog(context, result['message'] ?? '기기 정보를 가져오는데 실패했습니다.');
       }
     } catch (e) {
-      print('오류 발생: $e');
       
       // 로딩 다이얼로그 닫기
       if (Navigator.of(context).canPop()) {

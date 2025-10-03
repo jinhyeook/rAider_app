@@ -191,11 +191,13 @@ class _QrScanPageState extends State<QrScanPage> {
 
   // 성공 피드백 표시
   void _showSuccessFeedback(String message) {
+    // 기존 SnackBar 제거
+    ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
         backgroundColor: Colors.green,
-        duration: const Duration(seconds: 2),
+        duration: const Duration(seconds: 1),
       ),
     );
   }
@@ -206,7 +208,7 @@ class _QrScanPageState extends State<QrScanPage> {
       SnackBar(
         content: Text(message),
         backgroundColor: Colors.red,
-        duration: const Duration(seconds: 2),
+        duration: const Duration(milliseconds: 1500),
       ),
     );
   }

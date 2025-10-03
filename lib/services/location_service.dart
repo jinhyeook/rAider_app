@@ -19,14 +19,11 @@ class LocationService {
     _currentDeviceCode = deviceCode;
     _isTracking = true;
     
-    print('위치 추적 시작: userId=$userId, deviceCode=$deviceCode');
     
     _locationTimer = Timer.periodic(const Duration(seconds: 10), (timer) async {
       try {
         final position = await DeviceRentalService.getCurrentLocation();
         final now = DateTime.now();
-        print('현재 위치: ${position.latitude}, ${position.longitude}');
-        print('전송 시간: ${now.toString().substring(0, 19)}');
         
         // 서버 연결 상태와 관계없이 항상 로그 전송 시도
         await DeviceRentalService.sendRealtimeLog(
@@ -35,9 +32,7 @@ class LocationService {
           latitude: position.latitude,
           longitude: position.longitude,
         );
-        print('실시간 로그 전송 완료: ${position.latitude}, ${position.longitude} at ${now.toString().substring(0, 19)}');
       } catch (e) {
-        print('실시간 로그 전송 실패: $e');
         // 위치 추적은 계속 진행 (서버 연결 실패와 무관하게)
       }
     });
