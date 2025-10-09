@@ -1,8 +1,9 @@
 /// 서버 설정 파일
 class ServerConfig {
-  // 서버 기본 URL - 실제 서버 주소로 변경하세요
-  //static const String baseUrl = 'http://192.168.55.92:5000'; 
-  static const String baseUrl = 'http://13.124.194.20:5000'; 
+
+  // AWS 퍼블릭 IP로 변경경
+  // 파일 이름을 server_config.dart로 변경
+  static const String baseUrl = 'AWS_Public_IP';
 
   // API 엔드포인트들
   static const String authEndpoint = '/api/auth';
