@@ -9,8 +9,8 @@
 
 
     <application
-        android:label="untitled"
-        android:icon="@mipmap/ic_launcher"
+        android:label="rAider"
+        android:icon="@mipmap/launcher_icon"
         android:largeHeap="true"
         android:hardwareAccelerated="true">
         <activity
