@@ -3,7 +3,8 @@ class ServerConfig {
 
   // AWS 퍼블릭 IP로 변경경
   // 파일 이름을 server_config.dart로 변경
-  static const String baseUrl = 'AWS_Public_IP';
+  static const String baseUrl = 'AWS_Public_IP:5000';
+  // static const String baseUrl = 'AWS_Public_IP:80';
 
   // API 엔드포인트들
   static const String authEndpoint = '/api/auth';
