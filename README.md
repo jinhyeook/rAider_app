@@ -4,5 +4,8 @@ server_config_ex.dart 파일의 이름을 server_config.dart로 이름 수정! <
 
 
 flutter clean <br>
-flutter pub get
+flutter pub get <br><br>
+
+마지막 릴리즈 앱 추출할 때 <br>
+flutter build apk --release
 
