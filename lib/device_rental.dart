@@ -586,12 +586,18 @@ class _NaverMapAppState extends State<NaverMapApp> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('기기 대여 지도'),
-        centerTitle: true,
-        backgroundColor: const Color(0xFF0F5C31),
-      ),
+    return WillPopScope(
+      onWillPop: () async {
+        // 뒤로가기 버튼이 눌렸을 때 확인 다이얼로그 표시
+        final shouldPop = await _showExitConfirmationDialog();
+        return shouldPop ?? false;
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('기기 대여 지도'),
+          centerTitle: true,
+          backgroundColor: const Color(0xFF0F5C31),
+        ),
       body: Stack(
         children: [
           NaverMap(
@@ -753,6 +759,30 @@ class _NaverMapAppState extends State<NaverMapApp> {
             ),
         ],
       ),
+      ),
+    );
+  }
+
+  // 종료 확인 다이얼로그
+  Future<bool?> _showExitConfirmationDialog() {
+    return showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('기기 대여 지도 종료'),
+          content: const Text('기기 대여 지도를 종료하시겠습니까?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('취소'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('종료'),
+            ),
+          ],
+        );
+      },
     );
   }
 }

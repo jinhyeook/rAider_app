@@ -1,5 +1,6 @@
 import 'package:yolo_realtime_plugin/yolo_realtime_plugin.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_tts/flutter_tts.dart';
@@ -15,7 +16,7 @@ class DrivingPage extends StatefulWidget {
   State<DrivingPage> createState() => _DrivingPageState();
 }
 
-class _DrivingPageState extends State<DrivingPage> {
+class _DrivingPageState extends State<DrivingPage> with WidgetsBindingObserver {
   YoloRealtimeController? yoloController;
   bool _isRentalStarted = false;
   bool _isInitialized = false;
@@ -28,13 +29,16 @@ class _DrivingPageState extends State<DrivingPage> {
   Timer? _detectionTimer;
   bool _isDetectionEnabled = true;
   
+  
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _initializeTts();
     _initializeDriving();
     _loadUserInfo();
     _startDetectionTimer();
+    _setupBackButtonHandler();
   }
 
   // FlutterTts 초기화
@@ -302,8 +306,90 @@ class _DrivingPageState extends State<DrivingPage> {
     );
   }
 
+  // 뒤로가기 버튼 처리 설정
+  void _setupBackButtonHandler() {
+    // WillPopScope를 사용하므로 여기서는 빈 구현
+  }
+
+  // 뒤로가기 버튼 처리
+  Future<bool> _handleBackButton() async {
+    if (_isRentalStarted) {
+      // 대여가 진행 중이면 종료 확인 다이얼로그 표시
+      final shouldEnd = await _showExitConfirmationDialog();
+      if (shouldEnd == true) {
+        await _endRental();
+        return true; // 뒤로가기 허용
+      }
+      return false; // 뒤로가기 차단
+    } else {
+      // 대여가 시작되지 않았으면 그냥 종료 허용
+      return true;
+    }
+  }
+
+  // 종료 확인 다이얼로그
+  Future<bool?> _showExitConfirmationDialog() {
+    return showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('기기 대여 종료'),
+          content: const Text('기기 대여를 종료하시겠습니까?\n종료 시 요금이 정산됩니다.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('취소'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('종료'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // 앱 상태 변경 감지 (홈버튼 등)
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    
+    if (state == AppLifecycleState.paused && _isRentalStarted) {
+      // 앱이 백그라운드로 갈 때 (홈버튼 등)
+      _showAppPausedDialog();
+    }
+  }
+
+  // 앱 일시정지 다이얼로그
+  void _showAppPausedDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('앱 일시정지'),
+          content: const Text('기기 대여 중에는 앱을 종료할 수 없습니다.\n앱으로 돌아가세요.'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                // 앱을 다시 포그라운드로 가져오기
+                SystemChannels.platform.invokeMethod('SystemNavigator.pop');
+              },
+              child: const Text('확인'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    
     // 페이지를 벗어날 때 위치 추적 중지
     if (_isRentalStarted) {
       LocationService.stopLocationTracking();
@@ -338,27 +424,29 @@ class _DrivingPageState extends State<DrivingPage> {
       );
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('주행 모드'),
-        backgroundColor: const Color(0xFF0F5C31),
-        foregroundColor: Colors.white,
-        automaticallyImplyLeading: false,
-        actions: [
-          if (_isRentalStarted)
-            Container(
-              margin: const EdgeInsets.only(right: 16),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.location_on, color: Colors.green),
-                  SizedBox(width: 4),
-                  Text('대여 중', style: TextStyle(color: Colors.green)),
-                ],
+    return WillPopScope(
+      onWillPop: _handleBackButton,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('주행 모드'),
+          backgroundColor: const Color(0xFF0F5C31),
+          foregroundColor: Colors.white,
+          automaticallyImplyLeading: false,
+          actions: [
+            if (_isRentalStarted)
+              Container(
+                margin: const EdgeInsets.only(right: 16),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.location_on, color: Colors.green),
+                    SizedBox(width: 4),
+                    Text('대여 중', style: TextStyle(color: Colors.green)),
+                  ],
+                ),
               ),
-            ),
-        ],
-      ),
+          ],
+        ),
       body: Stack(
         children: [
           // 카메라 뷰 (전체 화면)
@@ -493,6 +581,7 @@ class _DrivingPageState extends State<DrivingPage> {
               ),
             ),
         ],
+      ),
       ),
     );
   }

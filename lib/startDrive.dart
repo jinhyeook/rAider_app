@@ -78,12 +78,18 @@ class _YoloRealTimeViewExampleState extends State<YoloRealTimeViewExample> {
       );
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('개인 주행 모드'),
-        backgroundColor: Colors.green,
-        automaticallyImplyLeading: false,
-      ),
+    return WillPopScope(
+      onWillPop: () async {
+        // 뒤로가기 버튼이 눌렸을 때 확인 다이얼로그 표시
+        final shouldPop = await _showExitConfirmationDialog();
+        return shouldPop ?? false;
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('개인 주행 모드'),
+          backgroundColor: Colors.green,
+          automaticallyImplyLeading: false,
+        ),
       body: Stack(
         children: [
           // 카메라 뷰 (전체 화면)
@@ -165,6 +171,30 @@ class _YoloRealTimeViewExampleState extends State<YoloRealTimeViewExample> {
         tooltip: '홈으로 돌아가기',
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      ),
+    );
+  }
+
+  // 종료 확인 다이얼로그
+  Future<bool?> _showExitConfirmationDialog() {
+    return showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('개인 주행 모드 종료'),
+          content: const Text('개인 주행 모드를 종료하시겠습니까?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('취소'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('종료'),
+            ),
+          ],
+        );
+      },
     );
   }
 

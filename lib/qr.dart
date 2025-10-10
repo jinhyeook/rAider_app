@@ -249,16 +249,21 @@ class _QrScanPageState extends State<QrScanPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('기기 QR코드 스캔'),
-        centerTitle: true,
-        backgroundColor: const Color(0xFF0F5C31),
-        foregroundColor: Colors.white,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: _handleBackButton,
-        ),
+    return WillPopScope(
+      onWillPop: () async {
+        _handleBackButton();
+        return false; // WillPopScope에서 직접 처리하므로 false 반환
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('기기 QR코드 스캔'),
+          centerTitle: true,
+          backgroundColor: const Color(0xFF0F5C31),
+          foregroundColor: Colors.white,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: _handleBackButton,
+          ),
         actions: [
           IconButton(
             icon: const Icon(Icons.keyboard),
@@ -477,6 +482,7 @@ class _QrScanPageState extends State<QrScanPage> {
             ),
           ),
         ],
+      ),
       ),
     );
   }
