@@ -218,7 +218,7 @@ class _HelmetDetectionPageState extends State<HelmetDetectionPage> {
         backgroundColor: Colors.black,
         body: Stack(
           children: [
-            // 전면 카메라 - 1:1 비율로 모델 입력과 일치
+            // 전면 카메라 - 1:1 비율로 모델 입력과 일치, -90도 회전
             Positioned.fill(
               child: yoloController != null
                   ? Center(
@@ -226,14 +226,17 @@ class _HelmetDetectionPageState extends State<HelmetDetectionPage> {
                         aspectRatio: 1, // 1:1 비율로 모델 입력과 일치
                         child: Container(
                           width: MediaQuery.of(context).size.width,
-                          child: YoloRealTimeView(
-                            width: MediaQuery.of(context).size.width,
-                            height: MediaQuery.of(context).size.width, // 1:1 비율 유지
-                            controller: yoloController!,
-                            drawBox: true, // 바운딩 박스 출력 활성화
-                            captureBox: (boxes) {
-                              _onDetectionResult(boxes);
-                            },
+                          child: Transform.rotate(
+                            angle: -1.5708, // -90도 회전 (라디안)
+                            child: YoloRealTimeView(
+                              width: MediaQuery.of(context).size.width,
+                              height: MediaQuery.of(context).size.width, // 1:1 비율 유지
+                              controller: yoloController!,
+                              drawBox: true, // 바운딩 박스 출력 활성화
+                              captureBox: (boxes) {
+                                _onDetectionResult(boxes);
+                              },
+                            ),
                           ),
                         ),
                       ),
