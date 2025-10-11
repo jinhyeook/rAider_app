@@ -22,11 +22,6 @@ class _HelmetDetectionPageState extends State<HelmetDetectionPage> {
   String _detectionStatus = '헬멧을 착용해주세요';
   Color _statusColor = Colors.orange;
   
-  // 탐지 정확도 개선을 위한 변수들
-  Timer? _detectionTimer;
-  List<bool> _recentDetections = [];
-  static const int _detectionHistorySize = 5; // 히스토리 크기 증가
-  static const double _stableDetectionThreshold = 0.8; // 80% 이상 일치해야 안정적 탐지로 간주
 
   @override
   void initState() {
@@ -58,8 +53,6 @@ class _HelmetDetectionPageState extends State<HelmetDetectionPage> {
         _isInitialized = true;
       });
       
-      // 탐지 안정화를 위한 타이머 시작
-      _startDetectionStabilization();
     } catch (e) {
       print('헬멧 검사 모델 초기화 오류: $e');
       setState(() {
@@ -69,45 +62,6 @@ class _HelmetDetectionPageState extends State<HelmetDetectionPage> {
     }
   }
 
-  // 탐지 안정화를 위한 타이머 시작
-  void _startDetectionStabilization() {
-    _detectionTimer = Timer.periodic(const Duration(milliseconds: 500), (timer) {
-      // 최근 탐지 결과를 기반으로 안정적인 상태 판단
-      _updateStableDetection();
-    });
-  }
-
-  // 안정적인 탐지 상태 업데이트 (단순화)
-  void _updateStableDetection() {
-    if (_recentDetections.length >= _detectionHistorySize) {
-      final trueCount = _recentDetections.where((detection) => detection).length;
-      final stabilityRatio = trueCount / _recentDetections.length;
-      
-      print('탐지 안정성: $stabilityRatio (${trueCount}/${_recentDetections.length})'); // 디버깅
-      
-      if (stabilityRatio >= _stableDetectionThreshold) {
-        // 안정적으로 헬멧 착용 감지
-        if (!_isHelmetDetected) {
-          setState(() {
-            _isHelmetDetected = true;
-            _detectionStatus = '헬멧 착용 확인됨!';
-            _statusColor = Colors.green;
-          });
-          print('헬멧 착용 안정적 탐지 완료!');
-        }
-      } else if (stabilityRatio <= (1 - _stableDetectionThreshold)) {
-        // 안정적으로 헬멧 미착용 감지
-        if (_isHelmetDetected) {
-          setState(() {
-            _isHelmetDetected = false;
-            _detectionStatus = '헬멧을 착용해주세요';
-            _statusColor = Colors.red;
-          });
-          print('헬멧 미착용 안정적 탐지 완료!');
-        }
-      }
-    }
-  }
 
   void _onDetectionResult(dynamic boxes) {
     bool currentDetection = false;
@@ -126,44 +80,6 @@ class _HelmetDetectionPageState extends State<HelmetDetectionPage> {
         
         // 신뢰도가 높은 감지만 고려 (임계값 상향)
         if (box.confidence > 0.7) {
-          // 바운딩 박스 크기 검증 (Rect 속성 사용)
-          final boxWidth = box.rect.right - box.rect.left;
-          final boxHeight = box.rect.bottom - box.rect.top;
-          final boxSize = (boxWidth + boxHeight) / 2;
-          
-          print('박스 크기: width=$boxWidth, height=$boxHeight, size=$boxSize'); // 디버깅
-          
-          // 박스가 너무 작거나 크면 무시 (엄격한 크기 제한)
-          if (boxSize < 0.15 || boxSize > 0.6) {
-            print('박스 크기가 부적절함: $boxSize');
-            continue;
-          }
-          
-          // 박스가 화면 중앙에 있는지 확인
-          final centerX = (box.rect.left + box.rect.right) / 2;
-          final centerY = (box.rect.top + box.rect.bottom) / 2;
-          
-          print('박스 중심: centerX=$centerX, centerY=$centerY'); // 디버깅
-          
-          // 박스가 화면 중앙에서 너무 멀리 떨어져 있으면 무시
-          final distanceFromCenter = ((centerX - 0.5).abs() + (centerY - 0.5).abs()) / 2;
-          if (distanceFromCenter > 0.3) {
-            print('박스가 중앙에서 너무 멀리 떨어져 있음: $distanceFromCenter');
-            continue;
-          }
-          
-          // 박스가 화면 하단에 있는지 확인 (얼굴은 보통 하단에 위치)
-          if (centerY < 0.4) {
-            print('박스가 화면 상단에 있음 (얼굴이 아님): $centerY');
-            continue;
-          }
-          
-          // 박스의 가로세로 비율 확인 (얼굴은 대략 정사각형에 가움)
-          final aspectRatio = boxWidth / boxHeight;
-          if (aspectRatio < 0.5 || aspectRatio > 2.0) {
-            print('박스 비율이 부적절함 (얼굴이 아님): $aspectRatio');
-            continue;
-          }
           
           if (box.label == 'helmet') {
             helmetFound = true;
@@ -216,11 +132,17 @@ class _HelmetDetectionPageState extends State<HelmetDetectionPage> {
       print('탐지된 박스 없음');
     }
     
-    // 최근 탐지 결과에 추가 (안정화를 위해)
-    _recentDetections.add(currentDetection);
-    if (_recentDetections.length > _detectionHistorySize) {
-      _recentDetections.removeAt(0);
-    }
+    // 즉시 탐지 결과 반영
+    setState(() {
+      _isHelmetDetected = currentDetection;
+      if (currentDetection) {
+        _detectionStatus = '헬멧 착용 확인됨!';
+        _statusColor = Colors.green;
+      } else {
+        _detectionStatus = '헬멧을 착용해주세요';
+        _statusColor = Colors.red;
+      }
+    });
   }
 
 
@@ -264,7 +186,6 @@ class _HelmetDetectionPageState extends State<HelmetDetectionPage> {
 
   @override
   void dispose() {
-    _detectionTimer?.cancel();
     super.dispose();
   }
 
