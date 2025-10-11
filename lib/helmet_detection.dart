@@ -22,6 +22,11 @@ class _HelmetDetectionPageState extends State<HelmetDetectionPage> {
   String _detectionStatus = '헬멧을 착용해주세요';
   Color _statusColor = Colors.orange;
   
+  // 탐지 간격 제어
+  DateTime? _lastDetectionTime;
+  final Duration _detectionInterval = const Duration(seconds: 5);
+  
+  
 
   @override
   void initState() {
@@ -64,6 +69,16 @@ class _HelmetDetectionPageState extends State<HelmetDetectionPage> {
 
 
   void _onDetectionResult(dynamic boxes) {
+    // 5초 간격으로만 탐지 결과 처리
+    final now = DateTime.now();
+    if (_lastDetectionTime != null && 
+        now.difference(_lastDetectionTime!) < _detectionInterval) {
+      return; // 5초가 지나지 않았으면 처리하지 않음
+    }
+    _lastDetectionTime = now;
+    
+    print('헬멧 탐지 수행 (5초 간격)');
+    
     bool currentDetection = false;
     
     if (boxes.isNotEmpty) {
@@ -227,7 +242,7 @@ class _HelmetDetectionPageState extends State<HelmetDetectionPage> {
                         child: Container(
                           width: MediaQuery.of(context).size.width,
                           child: Transform.rotate(
-                            angle: -1.5708, // -90도 회전 (라디안)
+                            angle: 0.0, // 헬멧 모델은 회전 없음
                             child: YoloRealTimeView(
                               width: MediaQuery.of(context).size.width,
                               height: MediaQuery.of(context).size.width, // 1:1 비율 유지
@@ -367,6 +382,15 @@ class _HelmetDetectionPageState extends State<HelmetDetectionPage> {
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                             color: _statusColor,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '탐지 간격: 5초',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[400],
                           ),
                           textAlign: TextAlign.center,
                         ),

@@ -143,6 +143,7 @@ class YoloRealtimePlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
       ActivityCompat.requestPermissions(activity!!, arrayOf(Manifest.permission.CAMERA), CAMERA_REQUEST_CODE)
     }
   }
+  
 
 }
 
@@ -243,11 +244,26 @@ class CameraView(
 
       // 이미지를 Bitmap 으로 변환
       val bitmap_origin = image.toBitmap()
+      
+      // 원본 이미지 정보 로그 출력
+      Log.d("[SPRING]", "원본 이미지 크기: ${bitmap_origin.width} x ${bitmap_origin.height}")
+      Log.d("[SPRING]", "모델 경로: ${Constants.MODEL_PATH}")
+      Log.d("[SPRING]", "헬멧 모델 여부: ${Constants.MODEL_PATH.contains("helmet")}")
 
-      // 이미지를 90도 회전
-      val rotatedBitmap = rotateBitmap(bitmap_origin, 90f)
+      // 모델별 회전 처리
+      val processedBitmap = if (Constants.MODEL_PATH.contains("helmet")) {
+        Log.d("[SPRING]", "헬멧 모델: -90도 회전 적용")
+        rotateBitmap(bitmap_origin, -90f) // 헬멧 모델은 -90도 회전
+      } else {
+        Log.d("[SPRING]", "다른 모델: 90도 회전 적용")
+        rotateBitmap(bitmap_origin, 90f) // 다른 모델은 90도 회전
+      }
+      
+      // 처리된 이미지 정보 로그 출력
+      Log.d("[SPRING]", "처리된 이미지 크기: ${processedBitmap.width} x ${processedBitmap.height}")
+      
 
-      val(resizedBitmap, padding_width, padding_height) = cameraSizeToModelSize(rotatedBitmap, MODEL_WIDTH, MODEL_HEIGHT)
+      val(resizedBitmap, padding_width, padding_height) = cameraSizeToModelSize(processedBitmap, MODEL_WIDTH, MODEL_HEIGHT)
 
       // Bitmap To Tensor
       val inputTensor = TensorImageUtils.bitmapToFloat32Tensor(
@@ -283,20 +299,35 @@ class CameraView(
           image.compress(Bitmap.CompressFormat.JPEG, 100, stream)
           val byteArray: ByteArray = stream.toByteArray()
 
-          // 90도 회전된 이미지에 맞게 바운딩 박스 좌표 조정
+          // 모델 타입에 따라 바운딩 박스 좌표 조정
           val outerMap = results.mapIndexed { index, result ->
-            // 90도 회전에 맞게 좌표 변환
-            // 원래 좌표: (left, top, width, height)
-            // 90도 회전 후: (1-top-height, left, height, width)
-            "box$index" to mapOf(
-              "x" to (1.0f - result.boundingBox.top - result.boundingBox.height),
-              "y" to result.boundingBox.left,
-              "width" to result.boundingBox.height,
-              "height" to result.boundingBox.width,
-              "label" to result.label,
-              "confidence" to result.confidence,
-              "image" to byteArray // 이 부분은 필요에 따라 조정
-            )
+            if (Constants.MODEL_PATH.contains("helmet")) {
+              // 헬멧 모델: -90도 회전에 맞게 좌표 변환
+              // 원래 좌표: (left, top, width, height)
+              // -90도 회전 후: (top, 1-left-width, height, width)
+              "box$index" to mapOf(
+                "x" to result.boundingBox.top,
+                "y" to (1.0f - result.boundingBox.left - result.boundingBox.width),
+                "width" to result.boundingBox.height,
+                "height" to result.boundingBox.width,
+                "label" to result.label,
+                "confidence" to result.confidence,
+                "image" to byteArray
+              )
+            } else {
+              // 다른 모델: 90도 회전에 맞게 좌표 변환
+              // 원래 좌표: (left, top, width, height)
+              // 90도 회전 후: (1-top-height, left, height, width)
+              "box$index" to mapOf(
+                "x" to (1.0f - result.boundingBox.top - result.boundingBox.height),
+                "y" to result.boundingBox.left,
+                "width" to result.boundingBox.height,
+                "height" to result.boundingBox.width,
+                "label" to result.label,
+                "confidence" to result.confidence,
+                "image" to byteArray
+              )
+            }
           }.toMap()
 
           activity.runOnUiThread {

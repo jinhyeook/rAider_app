@@ -130,7 +130,9 @@ class _YoloRealTimeViewReportState extends State<YoloRealTimeViewReport> {
       print('수동 촬영 시작');
       
       // 1. 현재 위치 가져오기
+      print('위치 정보 가져오기 시작...');
       final position = await _getCurrentLocation();
+      print('위치 정보 가져오기 완료: ${position.latitude}, ${position.longitude}');
       
       // 2. 수동 촬영 플래그 설정 및 화면 캡처
       _shouldCaptureImage = true;
@@ -159,7 +161,9 @@ class _YoloRealTimeViewReportState extends State<YoloRealTimeViewReport> {
       }
       
       // 3. CNN 분류로 위반 유형 판단
+      print('이미지 분류 시작...');
       final violationType = await _classifyImage(_capturedImageData!);
+      print('이미지 분류 결과: $violationType');
       
       if (violationType == null) {
         _showErrorSnackBar('헬멧 미착용 위반이 감지되지 않았습니다.');
@@ -180,7 +184,9 @@ class _YoloRealTimeViewReportState extends State<YoloRealTimeViewReport> {
       };
       
       // 5. 서버로 전송
+      print('서버로 신고 데이터 전송 시작...');
       await _sendReportToServer(reportData);
+      print('서버로 신고 데이터 전송 완료');
       
       // 6. 사용자에게 알림
       final koreanClassName = _getKoreanClassName(violationType);
@@ -188,8 +194,20 @@ class _YoloRealTimeViewReportState extends State<YoloRealTimeViewReport> {
       
     } catch (e) {
       print('수동 신고 처리 오류: $e');
+      print('오류 타입: ${e.runtimeType}');
+      print('오류 스택: ${StackTrace.current}');
       
-      _showErrorSnackBar('신고에 실패했습니다.');
+      // 구체적인 오류 메시지 표시
+      String errorMessage = '신고에 실패했습니다.';
+      if (e.toString().contains('위치')) {
+        errorMessage = '위치 정보를 가져올 수 없습니다.';
+      } else if (e.toString().contains('네트워크') || e.toString().contains('timeout')) {
+        errorMessage = '네트워크 연결을 확인해주세요.';
+      } else if (e.toString().contains('서버')) {
+        errorMessage = '서버 연결에 실패했습니다.';
+      }
+      
+      _showErrorSnackBar(errorMessage);
     } finally {
       setState(() {
         _isProcessing = false;
