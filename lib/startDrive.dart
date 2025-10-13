@@ -174,7 +174,7 @@ class _YoloRealTimeViewExampleState extends State<YoloRealTimeViewExample> {
                 ],
               ),
               child: const Text(
-                '카메라를 전방으로 향하게해 위험 요소를 탐지하세요!',
+                'Point the camera forward and detect hazards!',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 14,
@@ -192,7 +192,7 @@ class _YoloRealTimeViewExampleState extends State<YoloRealTimeViewExample> {
         },
         backgroundColor: Colors.green,
         child: const Icon(Icons.home, color: Colors.white),
-        tooltip: '홈으로 돌아가기',
+        tooltip: 'back to home',
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       ),
