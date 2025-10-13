@@ -21,13 +21,13 @@ void main() async {
   // 사용자 인증 상태 로드
   await AuthService().loadUserData();
   
-  // 인증 상태 검증 (선택적)
+  // 인증 상태 검증은 백그라운드에서만 수행 (자동 로그아웃 방지)
   if (AuthService().isLoggedIn) {
-    print('사용자 로그인 상태 확인됨 - 인증 상태 검증 중...');
+    print('사용자 로그인 상태 확인됨 - 백그라운드에서 인증 상태 검증 중...');
     // 백그라운드에서 인증 상태 검증 (앱 시작 속도에 영향 없도록)
     AuthService().validateAuthState().then((isValid) {
       if (!isValid) {
-        print('인증 상태 검증 실패 - 로그아웃 처리됨');
+        print('인증 상태 검증 실패 (로그아웃하지 않음)');
       } else {
         print('인증 상태 검증 성공');
       }
@@ -67,14 +67,8 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         print('앱이 포그라운드로 복원됨 - 사용자 데이터 재로드');
         AuthService().loadUserData();
         
-        // 인증 상태 재검증 (백그라운드에서)
-        if (AuthService().isLoggedIn) {
-          AuthService().validateAuthState().then((isValid) {
-            if (!isValid) {
-              print('앱 복원 시 인증 상태 검증 실패');
-            }
-          });
-        }
+        // 인증 상태 재검증은 앱 시작 시에만 수행 (자동 로그아웃 방지)
+        // 기기 대여 중이거나 일반적인 앱 전환에서는 검증하지 않음
         break;
       case AppLifecycleState.paused:
         // 앱이 백그라운드로 갈 때

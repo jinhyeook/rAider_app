@@ -34,16 +34,15 @@ class AuthService {
         headers: {
           'Content-Type': 'application/json',
         },
-      );
+      ).timeout(const Duration(seconds: 5));
       
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
         return responseData['valid'] == true;
       } else {
-        // 서버에서 세션이 유효하지 않다고 응답
-        print('서버에서 세션 무효화 응답');
-        await logout();
-        return false;
+        // 서버에서 세션이 유효하지 않다고 응답해도 즉시 로그아웃하지 않음
+        print('서버에서 세션 무효화 응답 (로그아웃하지 않음)');
+        return true; // 로컬 상태 유지
       }
     } catch (e) {
       print('인증 상태 검증 오류: $e');
@@ -159,14 +158,14 @@ class AuthService {
             _currentUser = decodedUser;
             print('사용자 데이터 로드 성공: ${_currentUser?['USER_ID'] ?? _currentUser?['user_id'] ?? _currentUser?['id'] ?? _currentUser?['ID']}');
           } else {
-            print('사용자 데이터 형식이 올바르지 않음');
+            print('사용자 데이터 형식이 올바르지 않음 - 로그아웃하지 않음');
             _currentUser = null;
-            await _clearUserData(); // 손상된 데이터 정리
+            // 손상된 데이터는 정리하지 않음 (사용자가 수동으로 로그아웃할 때까지 유지)
           }
         } catch (jsonError) {
-          print('JSON 파싱 오류: $jsonError');
+          print('JSON 파싱 오류: $jsonError - 로그아웃하지 않음');
           _currentUser = null;
-          await _clearUserData(); // 손상된 데이터 정리
+          // 손상된 데이터는 정리하지 않음 (사용자가 수동으로 로그아웃할 때까지 유지)
         }
       } else {
         _currentUser = null;
@@ -211,8 +210,8 @@ class AuthService {
       print('사용자 데이터 저장 성공: $userId');
     } catch (e) {
       print('사용자 데이터 저장 오류: $e');
-      // 저장 실패 시 현재 사용자 정보도 null로 설정
-      _currentUser = null;
+      // 저장 실패해도 현재 사용자 정보는 유지 (메모리에서만 사용)
+      // _currentUser = null; // 주석 처리하여 로그아웃 방지
       rethrow; // 상위에서 처리할 수 있도록 예외 재발생
     }
   }
