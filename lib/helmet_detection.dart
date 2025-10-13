@@ -19,7 +19,7 @@ class _HelmetDetectionPageState extends State<HelmetDetectionPage> {
   YoloRealtimeController? yoloController;
   bool _isHelmetDetected = false;
   bool _isInitialized = false;
-  String _detectionStatus = '헬멧을 착용해주세요';
+  String _detectionStatus = 'Please wear a helmet';
   Color _statusColor = Colors.orange;
   
   // 탐지 간격 제어
@@ -59,9 +59,9 @@ class _HelmetDetectionPageState extends State<HelmetDetectionPage> {
       });
       
     } catch (e) {
-      print('헬멧 검사 모델 초기화 오류: $e');
+      print('Helmet detection model initialization error: $e');
       setState(() {
-        _detectionStatus = '모델 초기화 실패';
+        _detectionStatus = 'Model initialization failed';
         _statusColor = Colors.red;
       });
     }
@@ -77,12 +77,12 @@ class _HelmetDetectionPageState extends State<HelmetDetectionPage> {
     }
     _lastDetectionTime = now;
     
-    print('헬멧 탐지 수행 (5초 간격)');
+    print('Helmet detection performed (5-second interval)');
     
     bool currentDetection = false;
     
     if (boxes.isNotEmpty) {
-      print('탐지된 박스 개수: ${boxes.length}'); // 디버깅
+      print('Number of detected boxes: ${boxes.length}'); // 디버깅
       
       // 헬멧 착용 여부 확인 - 단순화된 로직
       bool helmetFound = false;
@@ -91,7 +91,7 @@ class _HelmetDetectionPageState extends State<HelmetDetectionPage> {
       String detectedLabel = '';
 
       for (final box in boxes) {
-        print('박스 정보: label=${box.label}, confidence=${box.confidence}'); // 디버깅
+        print('Box info: label=${box.label}, confidence=${box.confidence}'); // 디버깅
         
         // 신뢰도가 높은 감지만 고려 (임계값 상향)
         if (box.confidence > 0.7) {
@@ -102,59 +102,59 @@ class _HelmetDetectionPageState extends State<HelmetDetectionPage> {
               maxConfidence = box.confidence;
               detectedLabel = 'helmet';
             }
-            print('헬멧 탐지됨: confidence=${box.confidence}');
+            print('Helmet detected: confidence=${box.confidence}');
           } else if (box.label == 'nohelmet') {
             noHelmetFound = true;
             if (box.confidence > maxConfidence) {
               maxConfidence = box.confidence;
               detectedLabel = 'nohelmet';
             }
-            print('헬멧 미착용 탐지됨: confidence=${box.confidence}');
+            print('No helmet detected: confidence=${box.confidence}');
           }
         } else {
-          print('신뢰도가 너무 낮음: ${box.confidence}');
+          print('Confidence too low: ${box.confidence}');
         }
       }
 
       // 탐지 결과 결정 (엄격한 검증)
       if (helmetFound && !noHelmetFound) {
         currentDetection = true;
-        _detectionStatus = '헬멧 착용 감지 중...';
+        _detectionStatus = 'Helmet wearing detected...';
         _statusColor = Colors.blue;
-        print('헬멧 착용 탐지됨');
+        print('Helmet wearing detected');
       } else if (noHelmetFound && !helmetFound) {
         currentDetection = false;
-        _detectionStatus = '헬멧 미착용 감지 중...';
+        _detectionStatus = 'No helmet detected...';
         _statusColor = Colors.red;
-        print('헬멧 미착용 탐지됨');
+        print('No helmet detected');
       } else if (helmetFound && noHelmetFound) {
         // 둘 다 감지된 경우 - 신뢰도가 높은 것으로 판단
         currentDetection = (detectedLabel == 'helmet');
-        _detectionStatus = currentDetection ? '헬멧 착용 감지 중...' : '헬멧 미착용 감지 중...';
+        _detectionStatus = currentDetection ? 'Helmet wearing detected...' : 'No helmet detected...';
         _statusColor = currentDetection ? Colors.blue : Colors.red;
-        print('혼재 탐지: ${detectedLabel} 선택됨');
+        print('Mixed detection: ${detectedLabel} selected');
       } else {
         // 불명확한 감지
         currentDetection = false;
-        _detectionStatus = '얼굴을 카메라 중앙에 맞춰주세요';
+        _detectionStatus = 'Please center your face in the camera';
         _statusColor = Colors.orange;
-        print('유효한 탐지 없음');
+        print('No valid detection');
       }
     } else {
       currentDetection = false;
-      _detectionStatus = '얼굴을 카메라 중앙에 맞춰주세요';
+      _detectionStatus = 'Please center your face in the camera';
       _statusColor = Colors.orange;
-      print('탐지된 박스 없음');
+      print('No boxes detected');
     }
     
     // 즉시 탐지 결과 반영
     setState(() {
       _isHelmetDetected = currentDetection;
       if (currentDetection) {
-        _detectionStatus = '헬멧 착용 확인됨!';
+        _detectionStatus = 'Helmet wearing confirmed!';
         _statusColor = Colors.green;
       } else {
-        _detectionStatus = '헬멧을 착용해주세요';
+        _detectionStatus = 'Please wear a helmet';
         _statusColor = Colors.red;
       }
     });
@@ -182,16 +182,16 @@ class _HelmetDetectionPageState extends State<HelmetDetectionPage> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('헬멧 검사 종료'),
-          content: const Text('헬멧 검사를 종료하시겠습니까?\n안전한 주행을 위해 헬멧 착용이 필요합니다.'),
+          title: const Text('Exit Helmet Check'),
+          content: const Text('Do you want to exit the helmet check?\nHelmet wearing is required for safe driving.'),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('취소'),
+              child: const Text('Cancel'),
             ),
             TextButton(
               onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('종료'),
+              child: const Text('Exit'),
             ),
           ],
         );
@@ -206,22 +206,30 @@ class _HelmetDetectionPageState extends State<HelmetDetectionPage> {
 
   @override
   Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+    final isSmallScreen = screenSize.width < 600;
+    
     if (!_isInitialized) {
       return Scaffold(
         backgroundColor: Colors.black,
-        body: const Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-              ),
-              SizedBox(height: 20),
-              Text(
-                '헬멧 검사 모델을 초기화하는 중...',
-                style: TextStyle(fontSize: 16, color: Colors.white),
-              ),
-            ],
+        body: SafeArea(
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+                SizedBox(height: isSmallScreen ? 16 : 20),
+                Text(
+                  'Initializing helmet detection model...',
+                  style: TextStyle(
+                    fontSize: isSmallScreen ? 14 : 16,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       );
@@ -258,7 +266,7 @@ class _HelmetDetectionPageState extends State<HelmetDetectionPage> {
                     )
                   : const Center(
                       child: Text(
-                        '카메라를 초기화할 수 없습니다',
+                        'Cannot initialize camera',
                         style: TextStyle(color: Colors.white),
                       ),
                     ),
@@ -327,7 +335,7 @@ class _HelmetDetectionPageState extends State<HelmetDetectionPage> {
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: const Text(
-                  '얼굴을 가이드라인 중앙에 맞춰주세요\n카메라를 정면으로 향하게 하세요',
+                  'Please center your face in the guideline\nPoint the camera straight ahead',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 14,
@@ -387,7 +395,7 @@ class _HelmetDetectionPageState extends State<HelmetDetectionPage> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          '탐지 간격: 5초',
+                          'Detection interval: 5 seconds',
                           style: TextStyle(
                             fontSize: 12,
                             color: Colors.grey[400],
@@ -411,7 +419,7 @@ class _HelmetDetectionPageState extends State<HelmetDetectionPage> {
                                 ),
                               ),
                               child: const Text(
-                                '다음 단계로 진행',
+                                'Proceed to Next Step',
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
@@ -428,7 +436,7 @@ class _HelmetDetectionPageState extends State<HelmetDetectionPage> {
                               border: Border.all(color: _statusColor),
                             ),
                             child: Text(
-                              '헬멧을 착용하고 얼굴을 카메라에 비춰주세요',
+                              'Please wear a helmet and point your face at the camera',
                               style: TextStyle(
                                 color: _statusColor,
                                 fontSize: 14,
@@ -463,64 +471,97 @@ class HelmetSuccessPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+    final isSmallScreen = screenSize.width < 600;
+    
     return WillPopScope(
       onWillPop: _handleBackButton,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('헬멧 검사 완료'),
+          title: Text(
+            'Helmet Check Complete',
+            style: TextStyle(
+              fontSize: isSmallScreen ? 18 : 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
           backgroundColor: const Color(0xFF0F5C31),
           foregroundColor: Colors.white,
           centerTitle: true,
           automaticallyImplyLeading: false, // 뒤로가기 버튼 비활성화
         ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.check_circle,
-              size: 100,
-              color: Colors.green,
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              '헬멧 착용이 확인되었습니다!',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF0F5C31),
-              ),
-            ),
-            const SizedBox(height: 10),
-            const Text(
-              '안전한 주행을 위해 헬멧을 착용해주셔서 감사합니다.',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 30),
-            ElevatedButton(
-              onPressed: () async {
-                // 헬멧 인증 완료 후 바로 주행 모드로 이동 (대여 시작 포함)
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const DrivingPage(),
+        body: SafeArea(
+          child: Center(
+            child: Container(
+              constraints: screenSize.width >= 1200
+                  ? const BoxConstraints(maxWidth: 600)
+                  : null,
+              padding: EdgeInsets.all(isSmallScreen ? 16 : 24),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.check_circle,
+                    size: isSmallScreen ? 80 : 100,
+                    color: Colors.green,
                   ),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF0F5C31),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                  SizedBox(height: isSmallScreen ? 16 : 20),
+                  Text(
+                    'Helmet wearing confirmed!',
+                    style: TextStyle(
+                      fontSize: isSmallScreen ? 20 : 24,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF0F5C31),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: isSmallScreen ? 8 : 10),
+                  Text(
+                    'Thank you for wearing a helmet for safe driving.',
+                    style: TextStyle(
+                      fontSize: isSmallScreen ? 14 : 16,
+                      color: Colors.grey,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: isSmallScreen ? 24 : 30),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        // 헬멧 인증 완료 후 바로 주행 모드로 이동 (대여 시작 포함)
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const DrivingPage(),
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF0F5C31),
+                        foregroundColor: Colors.white,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: isSmallScreen ? 24 : 30,
+                          vertical: isSmallScreen ? 12 : 15,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: Text(
+                        'Start Driving',
+                        style: TextStyle(
+                          fontSize: isSmallScreen ? 16 : 18,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              child: const Text('주행 시작'),
             ),
-          ],
+          ),
         ),
-      ),
       ),
     );
   }

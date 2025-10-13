@@ -70,10 +70,28 @@ class _YoloRealTimeViewExampleState extends State<YoloRealTimeViewExample> {
 
   @override
   Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+    final isSmallScreen = screenSize.width < 600;
+    
     if (yoloController == null) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
+      return Scaffold(
+        body: SafeArea(
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const CircularProgressIndicator(),
+                SizedBox(height: isSmallScreen ? 16 : 20),
+                Text(
+                  'Initializing camera...',
+                  style: TextStyle(
+                    fontSize: isSmallScreen ? 14 : 16,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       );
     }
@@ -86,7 +104,13 @@ class _YoloRealTimeViewExampleState extends State<YoloRealTimeViewExample> {
       },
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('개인 주행 모드'),
+          title: Text(
+            'Personal Driving Mode',
+            style: TextStyle(
+              fontSize: isSmallScreen ? 18 : 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
           backgroundColor: Colors.green,
           automaticallyImplyLeading: false,
         ),
@@ -111,12 +135,12 @@ class _YoloRealTimeViewExampleState extends State<YoloRealTimeViewExample> {
             // 감지된 객체를 안내에 추가
             for (final object in detectedObjects) {
               // 필요한 경우 객체 이름을 한국어로 번역
-              String koreanName = translateToKorean(object);
-              announcement += '$koreanName ';
+              String englishName = translateToEnglish(object);
+              announcement += '$englishName ';
             }
 
             if (announcement.isNotEmpty) {
-              flutterTts.speak('$announcement 감지');
+              flutterTts.speak('$announcement detected');
               // 탐지 후 비활성화 (10초 후 다시 활성화됨)
               setState(() {
                 _isDetectionEnabled = false;
@@ -177,20 +201,38 @@ class _YoloRealTimeViewExampleState extends State<YoloRealTimeViewExample> {
 
   // 종료 확인 다이얼로그
   Future<bool?> _showExitConfirmationDialog() {
+    final screenSize = MediaQuery.of(context).size;
+    final isSmallScreen = screenSize.width < 600;
+    
     return showDialog<bool>(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('개인 주행 모드 종료'),
-          content: const Text('개인 주행 모드를 종료하시겠습니까?'),
+          title: Text(
+            'Exit Personal Driving Mode',
+            style: TextStyle(
+              fontSize: isSmallScreen ? 16 : 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: Text(
+            'Do you want to exit personal driving mode?',
+            style: TextStyle(fontSize: isSmallScreen ? 14 : 16),
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('취소'),
+              child: Text(
+                'Cancel',
+                style: TextStyle(fontSize: isSmallScreen ? 14 : 16),
+              ),
             ),
             TextButton(
               onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('종료'),
+              child: Text(
+                'Exit',
+                style: TextStyle(fontSize: isSmallScreen ? 14 : 16),
+              ),
             ),
           ],
         );
@@ -217,21 +259,21 @@ class _YoloRealTimeViewExampleState extends State<YoloRealTimeViewExample> {
     "speed_bump"
   ];
 
-  // 객체 이름을 한국어로 번역하는 함수
-  String translateToKorean(String objectName) {
+  // 객체 이름을 영어로 번역하는 함수
+  String translateToEnglish(String objectName) {
     switch (objectName.toLowerCase()) {
       case 'pothole':
-        return '포트홀';
+        return 'Pothole';
       case 'car':
-        return '자동차';
+        return 'Car';
       case 'person':
-        return '사람';
+        return 'Person';
       case 'animal':
-        return '동물';
+        return 'Animal';
       case 'manhole':
-        return '맨홀';
+        return 'Manhole';
       case 'speed_bump':
-        return '과속방지턱';
+        return 'Speed Bump';
       default:
         return objectName;
     }

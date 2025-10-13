@@ -58,7 +58,7 @@ class HomeScreen extends StatelessWidget {
         }
       } else {
         // DB 연결 실패 시
-        _showErrorDialog(context, result['message'] ?? '기기 정보를 가져오는데 실패했습니다.');
+        _showErrorDialog(context, result['message'] ?? 'Failed to retrieve device information.');
       }
     } catch (e) {
       
@@ -68,21 +68,36 @@ class HomeScreen extends StatelessWidget {
       }
       
       // 오류 발생 시
-      _showErrorDialog(context, '네트워크 오류가 발생했습니다. 다시 시도해주세요.\n오류: $e');
+      _showErrorDialog(context, 'A network error occurred. Please try again.\nError: $e');
     }
   }
 
   // 사용 가능한 기기가 없을 때 다이얼로그
   void _showNoDevicesDialog(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+    final isSmallScreen = screenSize.width < 600;
+    
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('사용 가능한 기기 없음'),
-        content: const Text('현재 사용 가능한 기기가 없습니다.\n잠시 후 다시 시도해주세요.'),
+        title: Text(
+          'No Available Devices',
+          style: TextStyle(
+            fontSize: isSmallScreen ? 16 : 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Text(
+          'There are currently no available devices.\nPlease try again later.',
+          style: TextStyle(fontSize: isSmallScreen ? 14 : 16),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('확인'),
+            child: Text(
+              'OK',
+              style: TextStyle(fontSize: isSmallScreen ? 14 : 16),
+            ),
           ),
         ],
       ),
@@ -91,15 +106,30 @@ class HomeScreen extends StatelessWidget {
 
   // 오류 다이얼로그
   void _showErrorDialog(BuildContext context, String message) {
+    final screenSize = MediaQuery.of(context).size;
+    final isSmallScreen = screenSize.width < 600;
+    
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('오류'),
-        content: Text(message),
+        title: Text(
+          'Error',
+          style: TextStyle(
+            fontSize: isSmallScreen ? 16 : 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Text(
+          message,
+          style: TextStyle(fontSize: isSmallScreen ? 14 : 16),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('확인'),
+            child: Text(
+              'OK',
+              style: TextStyle(fontSize: isSmallScreen ? 14 : 16),
+            ),
           ),
         ],
       ),
@@ -108,104 +138,186 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+    final isSmallScreen = screenSize.width < 600;
+    final isTablet = screenSize.width >= 600 && screenSize.width < 1200;
+    final isDesktop = screenSize.width >= 1200;
+    
     return Scaffold(
       appBar: AppBar(
-        title: const Text('rAider'),
+        title: Text(
+          'rAider',
+          style: TextStyle(
+            fontSize: isSmallScreen ? 20 : 24,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         centerTitle: true,
         actions: [
           TextButton.icon(
-            icon: const Icon(Icons.logout, color: Color(0xFF0F5C31)),
-            label: const Text(
-              'logout',
-              style: TextStyle(color: Color(0xFF0F5C31)),
+            icon: Icon(
+              Icons.logout,
+              color: const Color(0xFF0F5C31),
+              size: isSmallScreen ? 18 : 20,
+            ),
+            label: Text(
+              'Logout',
+              style: TextStyle(
+                color: const Color(0xFF0F5C31),
+                fontSize: isSmallScreen ? 12 : 14,
+              ),
             ),
             onPressed: () => _logout(context),
           ),
         ],
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text(
-              'HOME',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 50),
-            // 첫 번째 기능 버튼 - 주행 시작
-            ElevatedButton(
-              onPressed: () {
-                // startDrive.dart에서 YoloRealTimeViewExample로 이동
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const YoloRealTimeViewExample(),
+      body: SafeArea(
+        child: Center(
+          child: Container(
+            constraints: isDesktop
+                ? const BoxConstraints(maxWidth: 600)
+                : null,
+            padding: EdgeInsets.all(isSmallScreen ? 16 : 24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  'HOME',
+                  style: TextStyle(
+                    fontSize: isSmallScreen ? 20 : (isTablet ? 22 : 24),
+                    fontWeight: FontWeight.bold,
                   ),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 15),
-                backgroundColor: Color(0xFF0F5C31),
-                foregroundColor: Colors.white,
-                minimumSize: const Size(200, 50),
-              ),
-              child: const Text('Use personal device', style: TextStyle(fontSize: 18)),
-            ),
-            const SizedBox(height: 20),
-            // 두 번째 기능 버튼 - 기기 대여
-            ElevatedButton(
-              onPressed: () => _navigateToDeviceRental(context),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 15),
-                backgroundColor: Color(0xFF0F5C31),
-                foregroundColor: Colors.white,
-                minimumSize: const Size(200, 50),
-              ),
-              child: const Text('Rent a device', style: TextStyle(fontSize: 18)),
-            ),
-            const SizedBox(height: 20),
-            // 세 번째 기능 버튼
-            ElevatedButton(
-              onPressed: () {
-                // 기능 3 기능은 나중에 구현될 예정
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const YoloRealTimeViewReport(),
+                ),
+                SizedBox(height: isSmallScreen ? 40 : 50),
+                // 첫 번째 기능 버튼 - 주행 시작
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      // startDrive.dart에서 YoloRealTimeViewExample로 이동
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const YoloRealTimeViewExample(),
+                        ),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isSmallScreen ? 40 : 50,
+                        vertical: isSmallScreen ? 12 : 15,
+                      ),
+                      backgroundColor: const Color(0xFF0F5C31),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: Text(
+                      'Use Personal Device',
+                      style: TextStyle(
+                        fontSize: isSmallScreen ? 16 : 18,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 15),
-                backgroundColor: Color(0xFF0F5C31),
-                foregroundColor: Colors.white,
-                minimumSize: const Size(200, 50),
-              ),
-              child: const Text('Report', style: TextStyle(fontSize: 18)),
-            ),
-            const SizedBox(height: 20),
-            // 네 번째 기능 버튼 - 마이페이지
-            ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const MyPageScreen(),
+                ),
+                SizedBox(height: isSmallScreen ? 16 : 20),
+                // 두 번째 기능 버튼 - 기기 대여
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () => _navigateToDeviceRental(context),
+                    style: ElevatedButton.styleFrom(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isSmallScreen ? 40 : 50,
+                        vertical: isSmallScreen ? 12 : 15,
+                      ),
+                      backgroundColor: const Color(0xFF0F5C31),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: Text(
+                      'Rent a Device',
+                      style: TextStyle(
+                        fontSize: isSmallScreen ? 16 : 18,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 15),
-                backgroundColor: Color(0xFF0F5C31),
-                foregroundColor: Colors.white,
-                minimumSize: const Size(200, 50),
-              ),
-              child: const Text('My Page', style: TextStyle(fontSize: 18)),
+                ),
+                SizedBox(height: isSmallScreen ? 16 : 20),
+                // 세 번째 기능 버튼
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      // 기능 3 기능은 나중에 구현될 예정
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const YoloRealTimeViewReport(),
+                        ),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isSmallScreen ? 40 : 50,
+                        vertical: isSmallScreen ? 12 : 15,
+                      ),
+                      backgroundColor: const Color(0xFF0F5C31),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: Text(
+                      'Report',
+                      style: TextStyle(
+                        fontSize: isSmallScreen ? 16 : 18,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(height: isSmallScreen ? 16 : 20),
+                // 네 번째 기능 버튼 - 마이페이지
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const MyPageScreen(),
+                        ),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isSmallScreen ? 40 : 50,
+                        vertical: isSmallScreen ? 12 : 15,
+                      ),
+                      backgroundColor: const Color(0xFF0F5C31),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: Text(
+                      'My Page',
+                      style: TextStyle(
+                        fontSize: isSmallScreen ? 16 : 18,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
       // 고객센터 챗봇 - 우하단 작은 원형 버튼
@@ -220,12 +332,15 @@ class HomeScreen extends StatelessWidget {
         },
         backgroundColor: const Color(0xFF0F5C31),
         foregroundColor: Colors.white,
-        tooltip: '고객센터 챗봇',
-        icon: const Icon(Icons.chat, size: 18),
-        label: const Text(
-          '고객센터 챗봇',
+        tooltip: 'Customer Service Chatbot',
+        icon: Icon(
+          Icons.chat,
+          size: isSmallScreen ? 16 : 18,
+        ),
+        label: Text(
+          'Customer Service',
           style: TextStyle(
-            fontSize: 12,
+            fontSize: isSmallScreen ? 10 : 12,
             fontWeight: FontWeight.w500,
           ),
         ),

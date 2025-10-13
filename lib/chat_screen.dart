@@ -27,7 +27,7 @@ class _ChatScreenState extends State<ChatScreen> {
     super.dispose();
   }
 
-  /// 챗봇 초기화 및 상태 확인
+  /// Initialize chatbot and check status
   Future<void> _initializeChatbot() async {
     setState(() {
       _isLoading = true;
@@ -47,14 +47,14 @@ class _ChatScreenState extends State<ChatScreen> {
           _isInitialized = false;
           _isLoading = false;
         });
-        _addErrorMessage(status['message'] ?? '챗봇 초기화에 실패했습니다.');
+        _addErrorMessage(status['message'] ?? 'Failed to initialize chatbot.');
       }
     } catch (e) {
       setState(() {
         _isInitialized = false;
         _isLoading = false;
       });
-      _addErrorMessage('챗봇 서버에 연결할 수 없습니다.');
+      _addErrorMessage('Unable to connect to chatbot server.');
     }
   }
 
@@ -62,15 +62,15 @@ class _ChatScreenState extends State<ChatScreen> {
     setState(() {
       _messages.add(
         ChatMessage(
-          text: '''안녕하세요! rAider 고객센터 챗봇입니다 :)
-다음과 같은 질문에 답변해드릴 수 있습니다:
+          text: '''Hello! I'm the rAider customer service chatbot :)
+I can answer questions about the following topics:
 
-• 앱 제작 기관 및 제작 팀
-• 앱 제작 배경
-• 앱 주요 기능
-• 문제 해결을 위한 연락처
+• App development organization and team
+• App development background
+• Main app features
+• Contact information for problem resolution
 
-궁금한 것이 있으시면 언제든지 질문해주세요!
+Feel free to ask me anything you're curious about!
           ''',
           isUser: false,
           timestamp: DateTime.now(),
@@ -83,7 +83,7 @@ class _ChatScreenState extends State<ChatScreen> {
     setState(() {
       _messages.add(
         ChatMessage(
-          text: '$message\n\n잠시 후 다시 시도해주세요.',
+          text: '$message\n\nPlease try again later.',
           isUser: false,
           timestamp: DateTime.now(),
         ),
@@ -95,7 +95,7 @@ class _ChatScreenState extends State<ChatScreen> {
     if (!_isInitialized) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('챗봇이 아직 초기화되지 않았습니다.'),
+          content: Text('Chatbot is not yet initialized.'),
           backgroundColor: Colors.orange,
           duration: const Duration(milliseconds: 1500),
         ),
@@ -106,7 +106,7 @@ class _ChatScreenState extends State<ChatScreen> {
     final text = _messageController.text.trim();
     if (text.isEmpty) return;
 
-    // 사용자 메시지 추가
+    // Add user message
     setState(() {
       _messages.add(
         ChatMessage(
@@ -120,7 +120,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
     _messageController.clear();
 
-    // RAG 챗봇 API 호출
+    // Call RAG chatbot API
     final response = await _ragChatbotService.sendMessage(text);
 
     setState(() {
@@ -129,14 +129,14 @@ class _ChatScreenState extends State<ChatScreen> {
         ChatMessage(
           text: response['success'] 
               ? response['message'] 
-              : '죄송합니다. 일시적인 오류가 발생했습니다. 다시 시도해주세요.',
+              : 'Sorry, a temporary error occurred. Please try again.',
           isUser: false,
           timestamp: DateTime.now(),
         ),
       );
     });
 
-    // 오류가 발생한 경우 사용자에게 알림
+    // Notify user if error occurs
     if (!response['success']) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -144,7 +144,7 @@ class _ChatScreenState extends State<ChatScreen> {
           backgroundColor: Colors.red,
           duration: const Duration(milliseconds: 1500),
           action: SnackBarAction(
-            label: '재시도',
+            label: 'Retry',
             textColor: Colors.white,
             onPressed: _initializeChatbot,
           ),
@@ -155,9 +155,20 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+    final isSmallScreen = screenSize.width < 600;
+    final isTablet = screenSize.width >= 600 && screenSize.width < 1200;
+    final isDesktop = screenSize.width >= 1200;
+    
     return Scaffold(
       appBar: AppBar(
-        title: const Text('rAider 고객센터 챗봇'),
+        title: Text(
+          'rAider Customer Service Chatbot',
+          style: TextStyle(
+            fontSize: isSmallScreen ? 16 : 18,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
         backgroundColor: const Color(0xFF0F5C31),
         foregroundColor: Colors.white,
         centerTitle: true,
@@ -165,133 +176,178 @@ class _ChatScreenState extends State<ChatScreen> {
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _resetChat,
-            tooltip: '새 대화 시작',
+            tooltip: 'Start new conversation',
           ),
         ],
       ),
-      body: Column(
-        children: [
-          // 상태 표시 바
-          if (!_isInitialized)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-              color: Colors.orange[100],
-              child: Row(
-                children: [
-                  const Icon(Icons.warning, color: Colors.orange, size: 16),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      '챗봇 초기화 중...',
-                      style: TextStyle(
-                        color: Colors.orange[800],
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Status display bar
+            if (!_isInitialized)
+              Container(
+                width: double.infinity,
+                padding: EdgeInsets.symmetric(
+                  vertical: isSmallScreen ? 6 : 8,
+                  horizontal: isSmallScreen ? 12 : 16,
+                ),
+                color: Colors.orange[100],
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.warning,
+                      color: Colors.orange,
+                      size: isSmallScreen ? 14 : 16,
+                    ),
+                    SizedBox(width: isSmallScreen ? 6 : 8),
+                    Expanded(
+                      child: Text(
+                        'Initializing chatbot...',
+                        style: TextStyle(
+                          color: Colors.orange[800],
+                          fontSize: isSmallScreen ? 12 : 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                  ),
-                  TextButton(
-                    onPressed: _initializeChatbot,
-                    child: const Text('재시도', style: TextStyle(fontSize: 12)),
+                    TextButton(
+                      onPressed: _initializeChatbot,
+                      style: TextButton.styleFrom(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: isSmallScreen ? 8 : 12,
+                          vertical: isSmallScreen ? 4 : 8,
+                        ),
+                      ),
+                      child: Text(
+                        'Retry',
+                        style: TextStyle(fontSize: isSmallScreen ? 10 : 12),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            
+            // Chat message list
+            Expanded(
+              child: Container(
+                constraints: isDesktop
+                    ? BoxConstraints(
+                        maxWidth: 800,
+                        maxHeight: double.infinity,
+                      )
+                    : null,
+                child: ListView.builder(
+                  padding: EdgeInsets.all(isSmallScreen ? 12 : 16),
+                  itemCount: _messages.length + (_isLoading ? 1 : 0),
+                  itemBuilder: (context, index) {
+                    if (index == _messages.length && _isLoading) {
+                      return _buildLoadingMessage();
+                    }
+                    return _buildMessageBubble(_messages[index]);
+                  },
+                ),
+              ),
+            ),
+            
+            // Message input area
+            Container(
+              padding: EdgeInsets.all(isSmallScreen ? 12 : 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.2),
+                    blurRadius: 4,
+                    offset: const Offset(0, -2),
                   ),
                 ],
               ),
-            ),
-          
-          // 채팅 메시지 리스트
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: _messages.length + (_isLoading ? 1 : 0),
-              itemBuilder: (context, index) {
-                if (index == _messages.length && _isLoading) {
-                  return _buildLoadingMessage();
-                }
-                return _buildMessageBubble(_messages[index]);
-              },
-            ),
-          ),
-          
-          // 메시지 입력 영역
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withOpacity(0.2),
-                  blurRadius: 4,
-                  offset: const Offset(0, -2),
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _messageController,
-                    enabled: _isInitialized && !_isLoading,
-                    decoration: InputDecoration(
-                      hintText: _isInitialized 
-                          ? '메시지를 입력하세요...' 
-                          : '챗봇 초기화 중...',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(25),
-                        borderSide: BorderSide(color: Colors.grey[300]!),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(25),
-                        borderSide: BorderSide(color: Colors.grey[300]!),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(25),
-                        borderSide: const BorderSide(color: Color(0xFF0F5C31)),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 12,
+              child: Container(
+                constraints: isDesktop
+                    ? const BoxConstraints(maxWidth: 800)
+                    : null,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _messageController,
+                        enabled: _isInitialized && !_isLoading,
+                        decoration: InputDecoration(
+                          hintText: _isInitialized 
+                              ? 'Enter your message...' 
+                              : 'Initializing chatbot...',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(
+                              isSmallScreen ? 20 : 25,
+                            ),
+                            borderSide: BorderSide(color: Colors.grey[300]!),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(
+                              isSmallScreen ? 20 : 25,
+                            ),
+                            borderSide: BorderSide(color: Colors.grey[300]!),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(
+                              isSmallScreen ? 20 : 25,
+                            ),
+                            borderSide: const BorderSide(color: Color(0xFF0F5C31)),
+                          ),
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: isSmallScreen ? 16 : 20,
+                            vertical: isSmallScreen ? 10 : 12,
+                          ),
+                        ),
+                        maxLines: null,
+                        textInputAction: TextInputAction.newline,
+                        onSubmitted: (_) => _sendMessage(),
+                        style: TextStyle(
+                          fontSize: isSmallScreen ? 14 : 16,
+                        ),
                       ),
                     ),
-                    maxLines: null,
-                    textInputAction: TextInputAction.newline,
-                    onSubmitted: (_) => _sendMessage(),
-                  ),
+                    SizedBox(width: isSmallScreen ? 8 : 12),
+                    Container(
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF0F5C31),
+                        shape: BoxShape.circle,
+                      ),
+                      child: IconButton(
+                        onPressed: (_isInitialized && !_isLoading) ? _sendMessage : null,
+                        iconSize: isSmallScreen ? 20 : 24,
+                        icon: _isLoading
+                            ? SizedBox(
+                                width: isSmallScreen ? 16 : 20,
+                                height: isSmallScreen ? 16 : 20,
+                                child: const CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                ),
+                              )
+                            : const Icon(
+                                Icons.send,
+                                color: Colors.white,
+                              ),
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 12),
-                Container(
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF0F5C31),
-                    shape: BoxShape.circle,
-                  ),
-                  child: IconButton(
-                    onPressed: (_isInitialized && !_isLoading) ? _sendMessage : null,
-                    icon: _isLoading
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                            ),
-                          )
-                        : const Icon(
-                            Icons.send,
-                            color: Colors.white,
-                          ),
-                  ),
-                ),
-              ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildMessageBubble(ChatMessage message) {
+    final screenSize = MediaQuery.of(context).size;
+    final isSmallScreen = screenSize.width < 600;
+    
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: EdgeInsets.only(bottom: isSmallScreen ? 12 : 16),
       child: Row(
         mainAxisAlignment: message.isUser 
             ? MainAxisAlignment.end 
@@ -300,34 +356,40 @@ class _ChatScreenState extends State<ChatScreen> {
         children: [
           if (!message.isUser) ...[
             Container(
-              width: 32,
-              height: 32,
+              width: isSmallScreen ? 28 : 32,
+              height: isSmallScreen ? 28 : 32,
               decoration: const BoxDecoration(
                 color: Color(0xFF0F5C31),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.smart_toy,
                 color: Colors.white,
-                size: 20,
+                size: isSmallScreen ? 18 : 20,
               ),
             ),
-            const SizedBox(width: 8),
+            SizedBox(width: isSmallScreen ? 6 : 8),
           ],
           Flexible(
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              constraints: BoxConstraints(
+                maxWidth: screenSize.width * (isSmallScreen ? 0.75 : 0.7),
+              ),
+              padding: EdgeInsets.symmetric(
+                horizontal: isSmallScreen ? 12 : 16,
+                vertical: isSmallScreen ? 10 : 12,
+              ),
               decoration: BoxDecoration(
                 color: message.isUser 
                     ? const Color(0xFF0F5C31)
                     : Colors.grey[100],
-                borderRadius: BorderRadius.circular(18).copyWith(
+                borderRadius: BorderRadius.circular(isSmallScreen ? 16 : 18).copyWith(
                   bottomLeft: message.isUser 
-                      ? const Radius.circular(18)
+                      ? Radius.circular(isSmallScreen ? 16 : 18)
                       : const Radius.circular(4),
                   bottomRight: message.isUser 
                       ? const Radius.circular(4)
-                      : const Radius.circular(18),
+                      : Radius.circular(isSmallScreen ? 16 : 18),
                 ),
               ),
               child: Column(
@@ -337,17 +399,18 @@ class _ChatScreenState extends State<ChatScreen> {
                     message.text,
                     style: TextStyle(
                       color: message.isUser ? Colors.white : Colors.black87,
-                      fontSize: 16,
+                      fontSize: isSmallScreen ? 14 : 16,
+                      height: 1.3,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: isSmallScreen ? 3 : 4),
                   Text(
                     _formatTime(message.timestamp),
                     style: TextStyle(
                       color: message.isUser 
                           ? Colors.white70 
                           : Colors.grey[600],
-                      fontSize: 12,
+                      fontSize: isSmallScreen ? 10 : 12,
                     ),
                   ),
                 ],
@@ -355,18 +418,18 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
           ),
           if (message.isUser) ...[
-            const SizedBox(width: 8),
+            SizedBox(width: isSmallScreen ? 6 : 8),
             Container(
-              width: 32,
-              height: 32,
+              width: isSmallScreen ? 28 : 32,
+              height: isSmallScreen ? 28 : 32,
               decoration: const BoxDecoration(
                 color: Colors.blue,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.person,
                 color: Colors.white,
-                size: 20,
+                size: isSmallScreen ? 18 : 20,
               ),
             ),
           ],
@@ -376,51 +439,57 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Widget _buildLoadingMessage() {
+    final screenSize = MediaQuery.of(context).size;
+    final isSmallScreen = screenSize.width < 600;
+    
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: EdgeInsets.only(bottom: isSmallScreen ? 12 : 16),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 32,
-            height: 32,
+            width: isSmallScreen ? 28 : 32,
+            height: isSmallScreen ? 28 : 32,
             decoration: const BoxDecoration(
               color: Color(0xFF0F5C31),
               shape: BoxShape.circle,
             ),
-            child: const Icon(
+            child: Icon(
               Icons.smart_toy,
               color: Colors.white,
-              size: 20,
+              size: isSmallScreen ? 18 : 20,
             ),
           ),
-          const SizedBox(width: 8),
+          SizedBox(width: isSmallScreen ? 6 : 8),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: EdgeInsets.symmetric(
+              horizontal: isSmallScreen ? 12 : 16,
+              vertical: isSmallScreen ? 10 : 12,
+            ),
             decoration: BoxDecoration(
               color: Colors.grey[100],
-              borderRadius: BorderRadius.circular(18).copyWith(
+              borderRadius: BorderRadius.circular(isSmallScreen ? 16 : 18).copyWith(
                 bottomLeft: const Radius.circular(4),
               ),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
+                SizedBox(
+                  width: isSmallScreen ? 16 : 20,
+                  height: isSmallScreen ? 16 : 20,
+                  child: const CircularProgressIndicator(
                     strokeWidth: 2,
                     valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF0F5C31)),
                   ),
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: isSmallScreen ? 6 : 8),
                 Text(
-                  '답변을 준비하고 있습니다...',
+                  'Preparing response...',
                   style: TextStyle(
                     color: Colors.grey[600],
-                    fontSize: 14,
+                    fontSize: isSmallScreen ? 12 : 14,
                   ),
                 ),
               ],
@@ -431,7 +500,7 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  /// 새 대화 시작 (세션 초기화)
+  /// Start new conversation (session reset)
   Future<void> _resetChat() async {
     await _ragChatbotService.resetSession();
     setState(() {
@@ -441,7 +510,7 @@ class _ChatScreenState extends State<ChatScreen> {
     
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('새로운 대화를 시작합니다.'),
+        content: Text('Starting a new conversation.'),
         backgroundColor: Color(0xFF0F5C31),
         duration: Duration(seconds: 1),
       ),
@@ -454,11 +523,11 @@ class _ChatScreenState extends State<ChatScreen> {
     final difference = now.difference(timestamp);
     
     if (difference.inMinutes < 1) {
-      return '방금 전';
+      return 'Just now';
     } else if (difference.inHours < 1) {
-      return '${difference.inMinutes}분 전';
+      return '${difference.inMinutes} minutes ago';
     } else if (difference.inDays < 1) {
-      return '${difference.inHours}시간 전';
+      return '${difference.inHours} hours ago';
     } else {
       return '${timestamp.month}/${timestamp.day} ${timestamp.hour.toString().padLeft(2, '0')}:${timestamp.minute.toString().padLeft(2, '0')}';
     }

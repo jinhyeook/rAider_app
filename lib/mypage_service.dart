@@ -100,4 +100,65 @@ class MyPageService {
       };
     }
   }
+
+  /// 디바이스 사용 로그 조회
+  /// 현재 로그인된 사용자의 최근 디바이스 사용 내역을 가져옵니다
+  Future<Map<String, dynamic>> getDeviceLogs() async {
+    try {
+      print('=== Device Logs API 호출 시작 ===');
+      
+      // 현재 로그인된 사용자 정보 가져오기
+      final authService = AuthService();
+      final currentUser = authService.currentUser;
+      
+      print('Current user: $currentUser');
+      
+      if (currentUser == null) {
+        print('사용자가 로그인되지 않음');
+        return {
+          'success': false,
+          'message': 'Login required.',
+        };
+      }
+
+      final userId = currentUser['user_id'];
+      print('User ID: $userId');
+      
+      final apiUrl = ServerConfig.getUserUrl('/device-logs/$userId');
+      print('API URL: $apiUrl');
+      
+      final response = await http.get(
+        Uri.parse(apiUrl),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      );
+
+      print('Response status code: ${response.statusCode}');
+      print('Response body: ${response.body}');
+
+      final responseData = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        print('API 호출 성공');
+        print('Device logs: ${responseData['device_logs']}');
+        return {
+          'success': true,
+          'device_logs': responseData['device_logs'] ?? [],
+        };
+      } else {
+        print('API 호출 실패: ${response.statusCode}');
+        return {
+          'success': false,
+          'message': responseData['error'] ?? 'Failed to load device logs.',
+        };
+      }
+    } catch (e) {
+      print('Device logs API 호출 중 오류: $e');
+      return {
+        'success': false,
+        'message': 'Network error occurred. Please try again.',
+      };
+    }
+  }
 }

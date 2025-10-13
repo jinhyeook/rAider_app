@@ -68,7 +68,7 @@ class _SignupScreenState extends State<SignupScreen> {
       ScaffoldMessenger.of(context).clearSnackBars();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('회원가입이 완료되었습니다! 환영합니다, ${_nameController.text.trim()}님!'),
+          content: Text('Registration completed! Welcome, ${_nameController.text.trim()}!'),
           backgroundColor: Colors.green,
           duration: const Duration(seconds: 1),
         ),
@@ -99,7 +99,7 @@ class _SignupScreenState extends State<SignupScreen> {
     if (_emailController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('이메일을 입력해주세요.'),
+          content: Text('Please enter your email.'),
           backgroundColor: Colors.orange,
         ),
       );
@@ -120,40 +120,68 @@ class _SignupScreenState extends State<SignupScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+    final isSmallScreen = screenSize.width < 600;
+    final isTablet = screenSize.width >= 600 && screenSize.width < 1200;
+    final isDesktop = screenSize.width >= 1200;
+    
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Sign Up'),
+        title: Text(
+          'Sign Up',
+          style: TextStyle(
+            fontSize: isSmallScreen ? 20 : 24,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         centerTitle: true,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const SizedBox(height: 20),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Name', style: TextStyle(fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 5),
-                  TextFormField(
-                    controller: _nameController,
-                    decoration: const InputDecoration(
-                      labelText: 'Name',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.person),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: EdgeInsets.all(isSmallScreen ? 16 : 20),
+          child: Center(
+            child: Container(
+              constraints: isDesktop
+                  ? const BoxConstraints(maxWidth: 600)
+                  : null,
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SizedBox(height: isSmallScreen ? 16 : 20),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Name',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: isSmallScreen ? 14 : 16,
+                          ),
+                        ),
+                        SizedBox(height: isSmallScreen ? 4 : 5),
+                        TextFormField(
+                          controller: _nameController,
+                          decoration: InputDecoration(
+                            labelText: 'Name',
+                            border: const OutlineInputBorder(),
+                            prefixIcon: const Icon(Icons.person),
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: isSmallScreen ? 12 : 16,
+                              vertical: isSmallScreen ? 12 : 16,
+                            ),
+                          ),
+                          style: TextStyle(fontSize: isSmallScreen ? 14 : 16),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter your name';
+                            }
+                            return null;
+                          },
+                        ),
+                      ],
                     ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return '이름을 입력해주세요';
-                      }
-                      return null;
-                    },
-                  ),
-                ],
-              ),
               const SizedBox(height: 20),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -174,10 +202,10 @@ class _SignupScreenState extends State<SignupScreen> {
                           keyboardType: TextInputType.emailAddress,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return '이메일을 입력해주세요';
+                              return 'Please enter your email';
                             }
                             if (!RegExp(r'^[a-zA-Z0-9._%+-]+$').hasMatch(value)) {
-                              return '올바른 이메일 형식이 아닙니다';
+                              return 'Invalid email format';
                             }
                             return null;
                           },
@@ -216,7 +244,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                       ),
-                      child: const Text('중복확인'),
+                      child: const Text('Check Duplicate'),
                     ),
                   ),
                 ],
@@ -247,10 +275,10 @@ class _SignupScreenState extends State<SignupScreen> {
                     obscureText: !_passwordVisible,
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return '비밀번호를 입력해주세요';
+                        return 'Please enter your password';
                       }
                       if (value.length < 6) {
-                        return '비밀번호는 최소 6자 이상이어야 합니다';
+                        return 'Password must be at least 6 characters';
                       }
                       return null;
                     },
@@ -283,10 +311,10 @@ class _SignupScreenState extends State<SignupScreen> {
                     obscureText: !_confirmPasswordVisible,
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return '비밀번호 확인을 입력해주세요';
+                        return 'Please confirm your password';
                       }
                       if (value != _passwordController.text) {
-                        return '비밀번호가 일치하지 않습니다';
+                        return 'Passwords do not match';
                       }
                       return null;
                     },
@@ -302,7 +330,7 @@ class _SignupScreenState extends State<SignupScreen> {
                   TextFormField(
                     controller: _phoneController,
                     decoration: const InputDecoration(
-                      labelText: 'Phone (예: 010-1234-5678)',
+                      labelText: 'Phone (e.g., 010-1234-5678)',
                       border: OutlineInputBorder(),
                       prefixIcon: Icon(Icons.phone),
                     ),
@@ -314,10 +342,10 @@ class _SignupScreenState extends State<SignupScreen> {
                     ],
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return '전화번호를 입력해주세요';
+                        return 'Please enter your phone number';
                       }
                       if (!RegExp(r'^01[0-9]-?[0-9]{4}-?[0-9]{4}$').hasMatch(value)) {
-                        return '올바른 전화번호 형식이 아닙니다 (예: 010-1234-5678)';
+                        return 'Invalid phone number format (e.g., 010-1234-5678)';
                       }
                       return null;
                     },
@@ -333,7 +361,7 @@ class _SignupScreenState extends State<SignupScreen> {
                   TextFormField(
                     controller: _birthController,
                     decoration: const InputDecoration(
-                      labelText: 'Birth (예: 1990-01-01)',
+                      labelText: 'Birth (e.g., 1990-01-01)',
                       border: OutlineInputBorder(),
                       prefixIcon: Icon(Icons.calendar_today),
                     ),
@@ -345,10 +373,10 @@ class _SignupScreenState extends State<SignupScreen> {
                     ],
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return '생년월일을 입력해주세요';
+                        return 'Please enter your birth date';
                       }
                       if (!RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(value)) {
-                        return '올바른 생년월일 형식이 아닙니다 (예: 1990-01-01)';
+                        return 'Invalid birth date format (e.g., 1990-01-01)';
                       }
                       return null;
                     },
@@ -364,7 +392,7 @@ class _SignupScreenState extends State<SignupScreen> {
                   TextFormField(
                     controller: _ssnController,
                     decoration: const InputDecoration(
-                      labelText: 'Personal Number (예: 901201-1234567)',
+                      labelText: 'Personal Number (e.g., 901201-1234567)',
                       border: OutlineInputBorder(),
                       prefixIcon: Icon(Icons.badge),
                     ),
@@ -376,10 +404,10 @@ class _SignupScreenState extends State<SignupScreen> {
                     ],
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return '주민번호를 입력해주세요';
+                        return 'Please enter your personal number';
                       }
                       if (!RegExp(r'^\d{6}-\d{7}$').hasMatch(value)) {
-                        return '올바른 주민번호 형식이 아닙니다 (예: 901201-1234567)';
+                        return 'Invalid personal number format (e.g., 901201-1234567)';
                       }
                       return null;
                     },
@@ -396,7 +424,7 @@ class _SignupScreenState extends State<SignupScreen> {
                     children: [
                       Expanded(
                         child: RadioListTile<String>(
-                          title: const Text('남성'),
+                          title: const Text('Male'),
                           value: 'M',
                           groupValue: _selectedSex,
                           onChanged: (String? value) {
@@ -408,7 +436,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       ),
                       Expanded(
                         child: RadioListTile<String>(
-                          title: const Text('여성'),
+                          title: const Text('Female'),
                           value: 'F',
                           groupValue: _selectedSex,
                           onChanged: (String? value) {
@@ -431,7 +459,7 @@ class _SignupScreenState extends State<SignupScreen> {
                   TextFormField(
                     controller: _driverLicenseController,
                     decoration: const InputDecoration(
-                      labelText: 'Driver License (예: 12-34-567890-12)',
+                      labelText: 'Driver License (e.g., 12-34-567890-12)',
                       border: OutlineInputBorder(),
                       prefixIcon: Icon(Icons.card_membership),
                     ),
@@ -443,46 +471,69 @@ class _SignupScreenState extends State<SignupScreen> {
                     ],
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return '운전면허증 번호를 입력해주세요';
+                        return 'Please enter your driver license number';
                       }
                       if (!RegExp(r'^\d{2}-\d{2}-\d{6}-\d{2}$').hasMatch(value)) {
-                        return '올바른 운전면허증 번호 형식이 아닙니다 (예: 12-34-567890-12)';
+                        return 'Invalid driver license format (e.g., 12-34-567890-12)';
                       }
                       return null;
                     },
                   ),
                 ],
               ),
-              const SizedBox(height: 30),
-              ElevatedButton(
-                onPressed: _isLoading ? null : _signup,
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 15),
-                  backgroundColor: Color(0xFF0F5C31),
-                  foregroundColor: Colors.white,
-                ),
-                child: _isLoading
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    SizedBox(height: isSmallScreen ? 24 : 30),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: _isLoading ? null : _signup,
+                        style: ElevatedButton.styleFrom(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: isSmallScreen ? 40 : 50,
+                            vertical: isSmallScreen ? 12 : 15,
+                          ),
+                          backgroundColor: const Color(0xFF0F5C31),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                         ),
-                      )
-                    : const Text('Create Account', style: TextStyle(fontSize: 18)),
+                        child: _isLoading
+                            ? SizedBox(
+                                width: isSmallScreen ? 18 : 20,
+                                height: isSmallScreen ? 18 : 20,
+                                child: const CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                ),
+                              )
+                            : Text(
+                                'Create Account',
+                                style: TextStyle(
+                                  fontSize: isSmallScreen ? 16 : 18,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                      ),
+                    ),
+                    SizedBox(height: isSmallScreen ? 16 : 20),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(builder: (context) => const LoginScreen()),
+                        );
+                      },
+                      child: Text(
+                        'Already have an account? Log in',
+                        style: TextStyle(
+                          fontSize: isSmallScreen ? 14 : 16,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: 20),
-              TextButton(
-                onPressed: () {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (context) => const LoginScreen()),
-                  );
-                },
-                child: const Text('Already have an account? Log in'),
-              ),
-            ],
+            ),
           ),
         ),
       ),

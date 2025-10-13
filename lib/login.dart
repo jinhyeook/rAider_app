@@ -45,7 +45,7 @@ class _LoginScreenState extends State<LoginScreen> {
       ScaffoldMessenger.of(context).clearSnackBars();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('로그인 성공! 환영합니다, ${result['user']['username']}님!'),
+          content: Text('Login successful! Welcome, ${result['user']['username']}!'),
           backgroundColor: Colors.green,
           duration: const Duration(seconds: 1),
         ),
@@ -74,126 +74,170 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+    final isSmallScreen = screenSize.width < 600;
+    final isTablet = screenSize.width >= 600 && screenSize.width < 1200;
+    final isDesktop = screenSize.width >= 1200;
+    
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Login'),
+        title: Text(
+          'Login',
+          style: TextStyle(
+            fontSize: isSmallScreen ? 20 : 24,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         centerTitle: true,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              TextFormField(
-                controller: _emailController,
-                decoration: const InputDecoration(
-                  labelText: 'Enter your Email',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.email),
-                ),
-                keyboardType: TextInputType.emailAddress,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter your Email"';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 20),
-              TextFormField(
-                controller: _passwordController,
-                decoration: InputDecoration(
-                  labelText: 'Enter your password',
-                  border: const OutlineInputBorder(),
-                  prefixIcon: const Icon(Icons.lock),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _passwordVisible ? Icons.visibility : Icons.visibility_off,
+      body: SafeArea(
+        child: Center(
+          child: Container(
+            constraints: isDesktop
+                ? const BoxConstraints(maxWidth: 500)
+                : null,
+            padding: EdgeInsets.all(isSmallScreen ? 16 : 24),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  TextFormField(
+                    controller: _emailController,
+                    decoration: InputDecoration(
+                      labelText: 'Enter your Email',
+                      border: const OutlineInputBorder(),
+                      prefixIcon: const Icon(Icons.email),
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: isSmallScreen ? 12 : 16,
+                        vertical: isSmallScreen ? 12 : 16,
+                      ),
                     ),
-                    onPressed: () {
-                      setState(() {
-                        _passwordVisible = !_passwordVisible;
-                      });
+                    keyboardType: TextInputType.emailAddress,
+                    style: TextStyle(fontSize: isSmallScreen ? 14 : 16),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter your Email';
+                      }
+                      return null;
                     },
                   ),
-                ),
-                obscureText: !_passwordVisible,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter your Password';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 30),
-              ElevatedButton(
-                onPressed: _isLoading ? null : _login,
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 15),
-                  backgroundColor: Color(0xFF0F5C31),
-                  foregroundColor: Colors.white,
-                ),
-                child: _isLoading
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  SizedBox(height: isSmallScreen ? 16 : 20),
+                  TextFormField(
+                    controller: _passwordController,
+                    decoration: InputDecoration(
+                      labelText: 'Enter your password',
+                      border: const OutlineInputBorder(),
+                      prefixIcon: const Icon(Icons.lock),
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: isSmallScreen ? 12 : 16,
+                        vertical: isSmallScreen ? 12 : 16,
+                      ),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _passwordVisible ? Icons.visibility : Icons.visibility_off,
+                          size: isSmallScreen ? 20 : 24,
                         ),
-                      )
-                    : const Text('Login', style: TextStyle(fontSize: 18)),
-              ),
-              const SizedBox(height: 20),
-              TextButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const SignupScreen()),
-                  );
-                },
-                child: const Text(
-                  '계정이 없으신가요? 회원가입',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Color(0xFF0F5C31),
-                    decoration: TextDecoration.underline,
+                        onPressed: () {
+                          setState(() {
+                            _passwordVisible = !_passwordVisible;
+                          });
+                        },
+                      ),
+                    ),
+                    obscureText: !_passwordVisible,
+                    style: TextStyle(fontSize: isSmallScreen ? 14 : 16),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter your Password';
+                      }
+                      return null;
+                    },
                   ),
-                ),
-              ),
-              const SizedBox(height: 10),
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                },
-                child: const Text(
-                  '뒤로가기',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.grey,
+                  SizedBox(height: isSmallScreen ? 24 : 30),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _isLoading ? null : _login,
+                      style: ElevatedButton.styleFrom(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: isSmallScreen ? 40 : 50,
+                          vertical: isSmallScreen ? 12 : 15,
+                        ),
+                        backgroundColor: const Color(0xFF0F5C31),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: _isLoading
+                          ? SizedBox(
+                              width: isSmallScreen ? 18 : 20,
+                              height: isSmallScreen ? 18 : 20,
+                              child: const CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              ),
+                            )
+                          : Text(
+                              'Login',
+                              style: TextStyle(
+                                fontSize: isSmallScreen ? 16 : 18,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                    ),
                   ),
-                ),
-              ),
+                  SizedBox(height: isSmallScreen ? 16 : 20),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const SignupScreen()),
+                      );
+                    },
+                    child: Text(
+                      'Don\'t have an account? Sign Up',
+                      style: TextStyle(
+                        fontSize: isSmallScreen ? 14 : 16,
+                        color: const Color(0xFF0F5C31),
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: isSmallScreen ? 8 : 10),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
+                    child: Text(
+                      'Go Back',
+                      style: TextStyle(
+                        fontSize: isSmallScreen ? 14 : 16,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ),
 
-              // 홈 화면으로 이동하는 디버그 버튼
-              /*
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (context) => const HomeScreen()),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 15),
-                  backgroundColor: Color(0xFF0F5C31),
-                  foregroundColor: Colors.white,
-                ),
-                child: const Text('Test : go to main', style: TextStyle(fontSize: 18)),
-              ),*/
-            ],
+                  // 홈 화면으로 이동하는 디버그 버튼
+                  /*
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (context) => const HomeScreen()),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 15),
+                      backgroundColor: Color(0xFF0F5C31),
+                      foregroundColor: Colors.white,
+                    ),
+                    child: const Text('Test : go to main', style: TextStyle(fontSize: 18)),
+                  ),*/
+                ],
+              ),
+            ),
           ),
         ),
       ),

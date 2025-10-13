@@ -56,10 +56,10 @@ class _YoloRealTimeViewReportState extends State<YoloRealTimeViewReport> {
       
       // 모든 SharedPreferences 키 확인
       final keys = prefs.getKeys();
-      print('SharedPreferences 키들: $keys');
+      print('SharedPreferences keys: $keys');
       
       _currentUserId = prefs.getString('user_id') ?? '';
-      print('user_id 값: "$_currentUserId"');
+      print('user_id value: "$_currentUserId"');
       
       // 다른 방법으로도 시도해보기
       if (_currentUserId!.isEmpty) {
@@ -69,20 +69,20 @@ class _YoloRealTimeViewReportState extends State<YoloRealTimeViewReport> {
           try {
             final userData = jsonDecode(userDataString);
             _currentUserId = userData['USER_ID'] ?? '';
-            print('user_data에서 추출한 USER_ID: "$_currentUserId"');
+            print('USER_ID extracted from user_data: "$_currentUserId"');
           } catch (e) {
-            print('user_data 파싱 오류: $e');
+            print('user_data parsing error: $e');
           }
         }
       }
       
       if (_currentUserId!.isEmpty) {
-        print('사용자 ID를 찾을 수 없습니다. 로그인이 필요합니다.');
+        print('User ID not found. Login required.');
       } else {
-        print('현재 신고자: $_currentUserId');
+        print('Current reporter: $_currentUserId');
       }
     } catch (e) {
-      print('사용자 정보 로드 오류: $e');
+      print('User info load error: $e');
     }
   }
 
@@ -122,17 +122,17 @@ class _YoloRealTimeViewReportState extends State<YoloRealTimeViewReport> {
 
       // 사용자 ID 확인
       if (_currentUserId == null || _currentUserId!.isEmpty) {
-        print('사용자 ID가 없어서 신고를 건너뜁니다.');
-        _showErrorSnackBar('로그인이 필요합니다.');
+        print('Skipping report due to missing user ID.');
+        _showErrorSnackBar('Login required.');
         return;
       }
 
-      print('수동 촬영 시작');
+      print('Manual capture started');
       
       // 1. 현재 위치 가져오기
-      print('위치 정보 가져오기 시작...');
+      print('Getting location information...');
       final position = await _getCurrentLocation();
-      print('위치 정보 가져오기 완료: ${position.latitude}, ${position.longitude}');
+      print('Location information retrieved: ${position.latitude}, ${position.longitude}');
       
       // 2. 수동 촬영 플래그 설정 및 화면 캡처
       _shouldCaptureImage = true;
@@ -145,9 +145,9 @@ class _YoloRealTimeViewReportState extends State<YoloRealTimeViewReport> {
         try {
           // YOLO 컨트롤러의 captureImage 메서드가 있다면 사용
           // 또는 다른 방법으로 이미지 캡처
-          print('YOLO 컨트롤러를 통한 이미지 캡처 시도');
+          print('Attempting image capture via YOLO controller');
         } catch (e) {
-          print('YOLO 컨트롤러 이미지 캡처 오류: $e');
+          print('YOLO controller image capture error: $e');
         }
       }
       
@@ -155,18 +155,18 @@ class _YoloRealTimeViewReportState extends State<YoloRealTimeViewReport> {
       await Future.delayed(const Duration(milliseconds: 1000));
       
       if (_capturedImageData == null) {
-        print('이미지 캡처 실패 - _capturedImageData가 null');
-        _showErrorSnackBar('이미지 캡처에 실패했습니다. 다시 시도해주세요.');
+        print('Image capture failed - _capturedImageData is null');
+        _showErrorSnackBar('Image capture failed. Please try again.');
         return;
       }
       
       // 3. CNN 분류로 위반 유형 판단
-      print('이미지 분류 시작...');
+      print('Starting image classification...');
       final violationType = await _classifyImage(_capturedImageData!);
-      print('이미지 분류 결과: $violationType');
+      print('Image classification result: $violationType');
       
       if (violationType == null) {
-        _showErrorSnackBar('헬멧 미착용 위반이 감지되지 않았습니다.');
+        _showErrorSnackBar('No helmet violation detected.');
         return;
       }
       
@@ -184,27 +184,27 @@ class _YoloRealTimeViewReportState extends State<YoloRealTimeViewReport> {
       };
       
       // 5. 서버로 전송
-      print('서버로 신고 데이터 전송 시작...');
+      print('Starting report data transmission to server...');
       await _sendReportToServer(reportData);
-      print('서버로 신고 데이터 전송 완료');
+      print('Report data transmission to server completed');
       
       // 6. 사용자에게 알림
       final koreanClassName = _getKoreanClassName(violationType);
-      _showSuccessSnackBar('$koreanClassName 유형으로 신고되었습니다.');
+      _showSuccessSnackBar('Reported as $koreanClassName type.');
       
     } catch (e) {
-      print('수동 신고 처리 오류: $e');
-      print('오류 타입: ${e.runtimeType}');
-      print('오류 스택: ${StackTrace.current}');
+      print('Manual report processing error: $e');
+      print('Error type: ${e.runtimeType}');
+      print('Error stack: ${StackTrace.current}');
       
       // 구체적인 오류 메시지 표시
-      String errorMessage = '신고에 실패했습니다.';
-      if (e.toString().contains('위치')) {
-        errorMessage = '위치 정보를 가져올 수 없습니다.';
-      } else if (e.toString().contains('네트워크') || e.toString().contains('timeout')) {
-        errorMessage = '네트워크 연결을 확인해주세요.';
-      } else if (e.toString().contains('서버')) {
-        errorMessage = '서버 연결에 실패했습니다.';
+      String errorMessage = 'Report failed.';
+      if (e.toString().contains('location') || e.toString().contains('위치')) {
+        errorMessage = 'Unable to get location information.';
+      } else if (e.toString().contains('network') || e.toString().contains('네트워크') || e.toString().contains('timeout')) {
+        errorMessage = 'Please check your network connection.';
+      } else if (e.toString().contains('server') || e.toString().contains('서버')) {
+        errorMessage = 'Server connection failed.';
       }
       
       _showErrorSnackBar(errorMessage);
@@ -222,21 +222,21 @@ class _YoloRealTimeViewReportState extends State<YoloRealTimeViewReport> {
   // YOLO 모델을 사용한 이미지 분류 함수 (실시간 감지 결과 기반)
   Future<String?> _classifyImage(Uint8List imageData) async {
     try {
-      print('YOLO 모델로 이미지 분류 시작');
+      print('Starting image classification with YOLO model');
       
       if (_lastDetectedBoxes.isEmpty) {
-        print('감지된 객체가 없음');
+        print('No objects detected');
         return null;
       }
 
-      print('YOLO 감지 결과: ${_lastDetectedBoxes.length}개 객체');
+      print('YOLO detection result: ${_lastDetectedBoxes.length} objects');
       
       // 감지된 객체들 중에서 헬멧 미착용 위반 찾기
       bool hasMultiViolation = false;
       bool hasSingleViolation = false;
       
       for (final detection in _lastDetectedBoxes) {
-        print('감지된 객체: ${detection.label}, 신뢰도: ${detection.confidence}');
+        print('Detected object: ${detection.label}, confidence: ${detection.confidence}');
         
         if (detection.label == 'total_nohelmet_multi') {
           hasMultiViolation = true;
@@ -247,18 +247,18 @@ class _YoloRealTimeViewReportState extends State<YoloRealTimeViewReport> {
       
       // 위반 유형 결정 (multi가 우선순위)
       if (hasMultiViolation) {
-        print('다중 헬멧 미착용 위반 감지');
+        print('Multi helmet violation detected');
         return 'total_nohelmet_multi';
       } else if (hasSingleViolation) {
-        print('단일 헬멧 미착용 위반 감지');
+        print('Single helmet violation detected');
         return 'total_nohelmet_single';
       } else {
-        print('헬멧 미착용 위반이 감지되지 않음');
+        print('No helmet violation detected');
         return null;
       }
       
     } catch (e) {
-      print('YOLO 이미지 분류 오류: $e');
+      print('YOLO image classification error: $e');
       return null;
     }
   }
@@ -270,19 +270,19 @@ class _YoloRealTimeViewReportState extends State<YoloRealTimeViewReport> {
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
-          throw Exception('위치 권한이 거부되었습니다.');
+          throw Exception('Location permission denied.');
         }
       }
 
       if (permission == LocationPermission.deniedForever) {
-        throw Exception('위치 권한이 영구적으로 거부되었습니다.');
+        throw Exception('Location permission permanently denied.');
       }
 
       return await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
       );
     } catch (e) {
-      print('위치 가져오기 오류: $e');
+      print('Location retrieval error: $e');
       rethrow;
     }
   }
@@ -290,21 +290,21 @@ class _YoloRealTimeViewReportState extends State<YoloRealTimeViewReport> {
   // 현재 화면 캡처 (실제로는 이미지 데이터가 이미 captureImage 콜백에서 받아짐)
   Future<void> _captureCurrentScreen() async {
     try {
-      print('화면 캡처 요청');
+      print('Screen capture requested');
       
       // YOLO 컨트롤러가 있는지 확인
       if (yoloController == null) {
-        print('YOLO 컨트롤러가 초기화되지 않음');
+        print('YOLO controller not initialized');
         return;
       }
       
       // YOLO의 captureImage 콜백에서 이미 _capturedImageData에 저장되므로
       // 여기서는 추가 작업이 필요하지 않음
       // 하지만 YOLO 컨트롤러가 활성화되어 있는지 확인
-      print('YOLO 컨트롤러 상태 확인 완료');
+      print('YOLO controller status check completed');
       
     } catch (e) {
-      print('화면 캡처 오류: $e');
+      print('Screen capture error: $e');
     }
   }
 
@@ -327,11 +327,11 @@ class _YoloRealTimeViewReportState extends State<YoloRealTimeViewReport> {
   String _getKoreanClassName(String violationType) {
     switch (violationType) {
       case 'total_nohelmet_multi':
-        return '다중 헬멧 미착용';
+        return 'Multi Helmet Violation';
       case 'total_nohelmet_single':
-        return '단일 헬멧 미착용';
+        return 'Single Helmet Violation';
       default:
-        return '헬멧 미착용';
+        return 'Helmet Violation';
     }
   }
 
@@ -354,7 +354,7 @@ class _YoloRealTimeViewReportState extends State<YoloRealTimeViewReport> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text(
-          '신고 안내',
+          'Report Guide',
           style: TextStyle(
             fontWeight: FontWeight.bold,
             color: Color(0xFF0F5C31),
@@ -365,12 +365,12 @@ class _YoloRealTimeViewReportState extends State<YoloRealTimeViewReport> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '• 5분 이내로 신고되어야 합니다.',
+              '• Must be reported within 5 minutes.',
               style: TextStyle(fontSize: 16),
             ),
             SizedBox(height: 8),
             Text(
-              '• 본인을 신고할 수 없습니다.',
+              '• You cannot report yourself.',
               style: TextStyle(fontSize: 16),
             ),
           ],
@@ -382,7 +382,7 @@ class _YoloRealTimeViewReportState extends State<YoloRealTimeViewReport> {
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
             child: const Text(
-              '확인',
+              'OK',
               style: TextStyle(
                 color: Color(0xFF0F5C31),
                 fontSize: 16,
@@ -398,7 +398,7 @@ class _YoloRealTimeViewReportState extends State<YoloRealTimeViewReport> {
   // 서버로 신고 데이터 전송
   Future<void> _sendReportToServer(Map<String, dynamic> reportData) async {
     try {
-      print('신고 데이터 전송 시작: $reportData');
+      print('Starting report data transmission: $reportData');
       
       final response = await http.post(
         Uri.parse(ServerConfig.getUserUrl('/report/manual-submit')),
@@ -406,32 +406,56 @@ class _YoloRealTimeViewReportState extends State<YoloRealTimeViewReport> {
         body: jsonEncode(reportData),
       ).timeout(const Duration(seconds: 10));
       
-      print('서버 응답: ${response.statusCode} - ${response.body}');
+      print('Server response: ${response.statusCode} - ${response.body}');
       
       if (response.statusCode == 200) {
-        print('수동 신고 전송 성공');
+        print('Manual report transmission successful');
       } else {
-        throw Exception('서버 응답 오류: ${response.statusCode}');
+        throw Exception('Server response error: ${response.statusCode}');
       }
     } catch (e) {
-      print('신고 전송 오류: $e');
+      print('Report transmission error: $e');
       rethrow;
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+    final isSmallScreen = screenSize.width < 600;
+    
     if (yoloController == null) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
+      return Scaffold(
+        body: SafeArea(
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const CircularProgressIndicator(),
+                SizedBox(height: isSmallScreen ? 16 : 20),
+                Text(
+                  'Initializing report mode...',
+                  style: TextStyle(
+                    fontSize: isSmallScreen ? 14 : 16,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       );
     }
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('신고 모드'),
+        title: Text(
+          'Report Mode',
+          style: TextStyle(
+            fontSize: isSmallScreen ? 18 : 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         backgroundColor: const Color(0xFF0F5C31),
         foregroundColor: Colors.white,
       ),
@@ -447,7 +471,7 @@ class _YoloRealTimeViewReportState extends State<YoloRealTimeViewReport> {
               captureBox: (boxes) {
                 // YOLO 감지 결과는 화면에만 표시 (자동 신고 안함)
                 // 실시간으로 감지된 객체들을 화면에 표시하고 저장
-                print('감지된 객체들: ${boxes.map((box) => box.label).toList()}');
+                print('Detected objects: ${boxes.map((box) => box.label).toList()}');
                 
                 // 최근 감지된 객체들을 저장 (분류에 사용)
                 _lastDetectedBoxes = boxes;
@@ -456,9 +480,9 @@ class _YoloRealTimeViewReportState extends State<YoloRealTimeViewReport> {
                 // 수동 촬영 시에만 이미지 캡처
                 if (_shouldCaptureImage && data != null) {
                   _capturedImageData = data;
-                  print('수동 이미지 캡처 완료: ${data.length} bytes');
+                  print('Manual image capture completed: ${data.length} bytes');
                 } else if (_shouldCaptureImage && data == null) {
-                  print('이미지 캡처 실패 - data가 null');
+                  print('Image capture failed - data is null');
                 }
               },
             ),
@@ -481,7 +505,7 @@ class _YoloRealTimeViewReportState extends State<YoloRealTimeViewReport> {
                   Icon(Icons.camera_alt, color: Colors.blue, size: 20),
                   SizedBox(width: 8),
                   Text(
-                    '수동 신고 모드 - 촬영 버튼을 눌러 신고하세요',
+                    'Manual Report Mode - Press capture button to report',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 14,

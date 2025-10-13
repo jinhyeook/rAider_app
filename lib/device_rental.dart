@@ -207,11 +207,13 @@ class _NaverMapAppState extends State<NaverMapApp> {
         final position = NLatLng(latitude, longitude);
         final iconData = _getDeviceIcon(deviceType);
         
+        // 디버깅을 위한 로그
+        log("Creating marker for device: $deviceId, type: '$deviceType', icon: $iconData", name: "DeviceRental");
+        
         try {
           final marker = NMarker(
             id: 'device_$deviceId',
             position: position,
-            caption: NOverlayCaption(text: deviceType ?? 'Device'),
             icon: await NOverlayImage.fromWidget(
               context: context,
               widget: Container(
@@ -270,11 +272,14 @@ class _NaverMapAppState extends State<NaverMapApp> {
 
           await controller.addOverlay(marker);
           addedMarkers++;
+          log("Marker added successfully: $deviceId", name: "DeviceRental");
         } catch (e) {
-          // 마커 추가 실패 시 무시
+          log("Failed to add marker for device $deviceId: $e", name: "DeviceRental");
         }
       }
     }
+    
+    log("Marker update completed. Added $addedMarkers markers out of ${_devices.length} devices", name: "DeviceRental");
   }
 
   /// 좌표를 소수점 4자리까지 반올림하여 그룹화 키 생성
@@ -355,13 +360,25 @@ class _NaverMapAppState extends State<NaverMapApp> {
 
   /// 기기 타입에 따른 아이콘 반환
   IconData _getDeviceIcon(String? deviceType) {
-    switch (deviceType?.toLowerCase()) {
-      case '자전거':
-        return Icons.directions_bike;
-      case '킥보드':
-        return Icons.electric_scooter;
-      default:
-        return Icons.location_on;
+    if (deviceType == null) return Icons.location_on;
+    
+    final type = deviceType.toLowerCase().trim();
+    
+    // 자전거 관련 키워드
+    if (type.contains('bicycle') || type.contains('bike') || type.contains('자전거')) {
+      return Icons.directions_bike;
+    }
+    // 킥보드/스쿠터 관련 키워드
+    else if (type.contains('kickboard') || type.contains('scooter') || type.contains('킥보드') || type.contains('스쿠터')) {
+      return Icons.electric_scooter;
+    }
+    // 전동차 관련 키워드
+    else if (type.contains('electric') || type.contains('전동')) {
+      return Icons.electric_car;
+    }
+    // 기본값
+    else {
+      return Icons.location_on;
     }
   }
 
@@ -464,7 +481,7 @@ class _NaverMapAppState extends State<NaverMapApp> {
       builder: (BuildContext context) {
         return AlertDialog(
           title: Text(
-            '기기 선택 (${_groupedDevices.length}개)',
+            'Device Selection (${_groupedDevices.length})',
             style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -496,7 +513,7 @@ class _NaverMapAppState extends State<NaverMapApp> {
                       ),
                     ),
                     title: Text(
-                      '${device['device_type'] ?? '기기'}',
+                      '${device['device_type'] ?? 'Device'}',
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
@@ -547,7 +564,7 @@ class _NaverMapAppState extends State<NaverMapApp> {
                   _showDeviceListPopup = false;
                 });
               },
-              child: const Text('취소'),
+              child: const Text('Cancel'),
             ),
           ],
         );
@@ -561,7 +578,7 @@ class _NaverMapAppState extends State<NaverMapApp> {
       // 선택된 기기 정보를 SharedPreferences에 저장
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('selected_device_id', _selectedDevice!['device_id']);
-      print('선택된 기기 저장: ${_selectedDevice!['device_id']}');
+      print('Selected device saved: ${_selectedDevice!['device_id']}');
     }
     
     // QR화면으로 이동 (지도 상태 유지)
@@ -594,7 +611,13 @@ class _NaverMapAppState extends State<NaverMapApp> {
       },
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('기기 대여 지도'),
+          title: Text(
+            'Device Rental Map',
+            style: TextStyle(
+              fontSize: MediaQuery.of(context).size.width < 600 ? 18 : 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
           centerTitle: true,
           backgroundColor: const Color(0xFF0F5C31),
         ),
@@ -654,7 +677,7 @@ class _NaverMapAppState extends State<NaverMapApp> {
                 ],
               ),
               child: Text(
-                '사용 가능한 기기: ${_devices.length}개',
+                'Available Devices: ${_devices.length}',
                 style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -692,7 +715,7 @@ class _NaverMapAppState extends State<NaverMapApp> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              '${_selectedDevice!['device_type'] ?? '기기'}',
+                              '${_selectedDevice!['device_type'] ?? 'Device'}',
                               style: const TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
@@ -765,20 +788,38 @@ class _NaverMapAppState extends State<NaverMapApp> {
 
   // 종료 확인 다이얼로그
   Future<bool?> _showExitConfirmationDialog() {
+    final screenSize = MediaQuery.of(context).size;
+    final isSmallScreen = screenSize.width < 600;
+    
     return showDialog<bool>(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('기기 대여 지도 종료'),
-          content: const Text('기기 대여 지도를 종료하시겠습니까?'),
+          title: Text(
+            'Exit Device Rental Map',
+            style: TextStyle(
+              fontSize: isSmallScreen ? 16 : 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: Text(
+            'Do you want to exit the device rental map?',
+            style: TextStyle(fontSize: isSmallScreen ? 14 : 16),
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('취소'),
+              child: Text(
+                'Cancel',
+                style: TextStyle(fontSize: isSmallScreen ? 14 : 16),
+              ),
             ),
             TextButton(
               onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('종료'),
+              child: Text(
+                'Exit',
+                style: TextStyle(fontSize: isSmallScreen ? 14 : 16),
+              ),
             ),
           ],
         );

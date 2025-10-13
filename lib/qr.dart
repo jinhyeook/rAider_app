@@ -80,40 +80,40 @@ class _QrScanPageState extends State<QrScanPage> {
       _isProcessing = true;
     });
 
-    log("QR코드 스캔됨: $qrData", name: "QRScan");
-    print("=== QR코드 스캔됨: $qrData ===");
+    log("QR code scanned: $qrData", name: "QRScan");
+    print("=== QR code scanned: $qrData ===");
 
     try {
       // QR코드에서 기기 ID 추출 (예: "DEVICE_12345" 형태)
       String? deviceId = _extractDeviceId(qrData);
       
-      log("추출된 기기 ID: $deviceId", name: "QRScan");
-      print("=== 추출된 기기 ID: $deviceId ===");
+      log("Extracted device ID: $deviceId", name: "QRScan");
+      print("=== Extracted device ID: $deviceId ===");
       
       if (deviceId != null) {
         // 지도에서 선택한 기기 ID와 비교
         final prefs = await SharedPreferences.getInstance();
         final selectedDeviceId = prefs.getString('selected_device_id');
         
-        log("지도에서 선택한 기기: $selectedDeviceId", name: "QRScan");
-        log("QR코드에서 스캔한 기기: $deviceId", name: "QRScan");
-        print("=== 지도에서 선택한 기기: $selectedDeviceId ===");
-        print("=== QR코드에서 스캔한 기기: $deviceId ===");
+        log("Selected device from map: $selectedDeviceId", name: "QRScan");
+        log("Scanned device from QR: $deviceId", name: "QRScan");
+        print("=== Selected device from map: $selectedDeviceId ===");
+        print("=== Scanned device from QR: $deviceId ===");
         
         if (selectedDeviceId != null && selectedDeviceId == deviceId) {
           // 기기 ID가 일치하는 경우
           await prefs.setString('selected_device_code', deviceId);
           
-          log("기기 ID 일치 확인됨: $deviceId", name: "QRScan");
-          print("=== 기기 ID 일치 확인됨: $deviceId ===");
+          log("Device ID match confirmed: $deviceId", name: "QRScan");
+          print("=== Device ID match confirmed: $deviceId ===");
           
           setState(() {
-            _statusMessage = "✅ 기기 ID 일치!\n인증을 진행합니다...";
+            _statusMessage = "✅ Device ID Match!\nProceeding with authentication...";
             _showStatusCard = true;
           });
           
           // 성공 피드백
-          _showSuccessFeedback("기기 ID가 일치합니다! 인증을 진행합니다.");
+          _showSuccessFeedback("Device ID matches! Proceeding with authentication.");
           
           // 잠시 후 OCR 페이지로 이동
           await Future.delayed(const Duration(milliseconds: 1500));
@@ -126,21 +126,21 @@ class _QrScanPageState extends State<QrScanPage> {
           }
         } else {
           // 기기 ID가 일치하지 않는 경우
-          print("=== 기기 ID 불일치: 선택한 기기($selectedDeviceId) != 스캔한 기기($deviceId) ===");
+          print("=== Device ID mismatch: Selected device($selectedDeviceId) != Scanned device($deviceId) ===");
           
           setState(() {
-            _statusMessage = "❌ 기기 ID 불일치!\n선택한 기기: $selectedDeviceId\n스캔한 기기: $deviceId";
+            _statusMessage = "❌ Device ID Mismatch!\nSelected device: $selectedDeviceId\nScanned device: $deviceId";
             _showStatusCard = true;
           });
           
-          _showErrorFeedback("선택한 기기와 QR코드가 일치하지 않습니다.\n다시 시도해주세요.");
+          _showErrorFeedback("The selected device and QR code do not match.\nPlease try again.");
         }
       } else {
-        _showErrorFeedback("유효하지 않은 QR코드입니다.");
+        _showErrorFeedback("Invalid QR code.");
       }
     } catch (e) {
-      log("QR코드 처리 오류: $e", name: "QRScan");
-      _showErrorFeedback("QR코드 처리 중 오류가 발생했습니다.");
+      log("QR code processing error: $e", name: "QRScan");
+      _showErrorFeedback("An error occurred while processing the QR code.");
     } finally {
       if (mounted) {
         setState(() {
@@ -152,8 +152,8 @@ class _QrScanPageState extends State<QrScanPage> {
 
   // QR코드에서 기기 ID 추출
   String? _extractDeviceId(String qrData) {
-    log("QR코드 원본 데이터: $qrData", name: "QRScan");
-    print("=== QR코드 원본 데이터: $qrData ===");
+    log("QR code original data: $qrData", name: "QRScan");
+    print("=== QR code original data: $qrData ===");
     
     // 다양한 QR코드 형식 지원
     final patterns = [
@@ -163,29 +163,29 @@ class _QrScanPageState extends State<QrScanPage> {
       RegExp(r'(\w{10,})', caseSensitive: false), // 10자 이상의 문자열
     ];
 
-    log("패턴 매칭 시도 중...", name: "QRScan");
-    print("=== 패턴 매칭 시도 중... ===");
+    log("Attempting pattern matching...", name: "QRScan");
+    print("=== Attempting pattern matching... ===");
     
     for (int i = 0; i < patterns.length; i++) {
       final pattern = patterns[i];
       final match = pattern.firstMatch(qrData);
       if (match != null) {
         final extractedId = match.group(1) ?? match.group(0);
-        log("패턴 $i 매칭 성공: $extractedId", name: "QRScan");
-        print("=== 패턴 $i 매칭 성공: $extractedId ===");
+        log("Pattern $i match successful: $extractedId", name: "QRScan");
+        print("=== Pattern $i match successful: $extractedId ===");
         return extractedId;
       }
     }
 
     // 패턴이 매치되지 않으면 전체 문자열을 기기 ID로 사용
     if (qrData.length >= 5) {
-      log("패턴 매칭 실패, 전체 문자열 사용: $qrData", name: "QRScan");
-      print("=== 패턴 매칭 실패, 전체 문자열 사용: $qrData ===");
+      log("Pattern matching failed, using full string: $qrData", name: "QRScan");
+      print("=== Pattern matching failed, using full string: $qrData ===");
       return qrData;
     }
 
-    log("기기 ID 추출 실패: 너무 짧은 문자열", name: "QRScan");
-    print("=== 기기 ID 추출 실패: 너무 짧은 문자열 ===");
+    log("Device ID extraction failed: string too short", name: "QRScan");
+    print("=== Device ID extraction failed: string too short ===");
     return null;
   }
 
@@ -213,42 +213,12 @@ class _QrScanPageState extends State<QrScanPage> {
     );
   }
 
-  // 수동 입력 버튼
-  void _showManualInputDialog() {
-    final TextEditingController textController = TextEditingController();
-    
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('기기 ID 수동 입력'),
-        content: TextField(
-          controller: textController,
-          decoration: const InputDecoration(
-            hintText: '기기 ID를 입력하세요',
-            border: OutlineInputBorder(),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('취소'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              if (textController.text.isNotEmpty) {
-                _processQRCode(textController.text);
-              }
-            },
-            child: const Text('확인'),
-          ),
-        ],
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+    final isSmallScreen = screenSize.width < 600;
+    
     return WillPopScope(
       onWillPop: () async {
         _handleBackButton();
@@ -256,7 +226,13 @@ class _QrScanPageState extends State<QrScanPage> {
       },
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('기기 QR코드 스캔'),
+          title: Text(
+            'Device QR Code Scan',
+            style: TextStyle(
+              fontSize: isSmallScreen ? 16 : 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
           centerTitle: true,
           backgroundColor: const Color(0xFF0F5C31),
           foregroundColor: Colors.white,
@@ -264,13 +240,7 @@ class _QrScanPageState extends State<QrScanPage> {
             icon: const Icon(Icons.arrow_back),
             onPressed: _handleBackButton,
           ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.keyboard),
-            onPressed: _showManualInputDialog,
-            tooltip: '수동 입력',
-          ),
-        ],
+        actions: [],
       ),
       body: Stack(
         children: [
@@ -334,7 +304,7 @@ class _QrScanPageState extends State<QrScanPage> {
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
-                        '기기의 QR코드를 스캔하세요',
+                        'Scan the device QR code',
                         style: TextStyle(
                           color: _isFlashOn ? Colors.green : Colors.white,
                           fontSize: 18,
@@ -362,7 +332,7 @@ class _QrScanPageState extends State<QrScanPage> {
                       ),
                       SizedBox(height: 20),
                       Text(
-                        'QR코드 처리 중...',
+                        'Processing QR code...',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 16,
@@ -419,7 +389,7 @@ class _QrScanPageState extends State<QrScanPage> {
                     const SizedBox(height: 8),
                     if (_selectedDeviceId != null)
                       Text(
-                        '선택한 기기: $_selectedDeviceId',
+                        'Selected device: $_selectedDeviceId',
                         style: const TextStyle(
                           fontSize: 12,
                           color: Colors.grey,
@@ -460,7 +430,7 @@ class _QrScanPageState extends State<QrScanPage> {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    '기기 QR코드를 카메라에 비춰주세요',
+                    'Point the camera at the device QR code',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -470,7 +440,7 @@ class _QrScanPageState extends State<QrScanPage> {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    'QR코드가 인식되지 않으면 수동 입력을 이용하세요',
+                    'Make sure the QR code is clearly visible',
                     style: TextStyle(
                       fontSize: 12,
                       color: Colors.grey,

@@ -20,6 +20,19 @@ void main() async {
 
   // 사용자 인증 상태 로드
   await AuthService().loadUserData();
+  
+  // 인증 상태 검증 (선택적)
+  if (AuthService().isLoggedIn) {
+    print('사용자 로그인 상태 확인됨 - 인증 상태 검증 중...');
+    // 백그라운드에서 인증 상태 검증 (앱 시작 속도에 영향 없도록)
+    AuthService().validateAuthState().then((isValid) {
+      if (!isValid) {
+        print('인증 상태 검증 실패 - 로그아웃 처리됨');
+      } else {
+        print('인증 상태 검증 성공');
+      }
+    });
+  }
 
   runApp(const MyApp());
 }
@@ -46,9 +59,40 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.detached) {
-      // 앱이 완전히 종료될 때 정리 작업
-      _cleanupResources();
+    print('앱 생명주기 상태 변경: $state');
+    
+    switch (state) {
+      case AppLifecycleState.resumed:
+        // 앱이 포그라운드로 돌아올 때 사용자 데이터 다시 로드
+        print('앱이 포그라운드로 복원됨 - 사용자 데이터 재로드');
+        AuthService().loadUserData();
+        
+        // 인증 상태 재검증 (백그라운드에서)
+        if (AuthService().isLoggedIn) {
+          AuthService().validateAuthState().then((isValid) {
+            if (!isValid) {
+              print('앱 복원 시 인증 상태 검증 실패');
+            }
+          });
+        }
+        break;
+      case AppLifecycleState.paused:
+        // 앱이 백그라운드로 갈 때
+        print('앱이 백그라운드로 이동');
+        break;
+      case AppLifecycleState.detached:
+        // 앱이 완전히 종료될 때 정리 작업
+        print('앱이 완전히 종료됨 - 정리 작업 수행');
+        _cleanupResources();
+        break;
+      case AppLifecycleState.inactive:
+        // 앱이 비활성 상태일 때
+        print('앱이 비활성 상태');
+        break;
+      case AppLifecycleState.hidden:
+        // 앱이 숨겨진 상태일 때
+        print('앱이 숨겨진 상태');
+        break;
     }
   }
 
@@ -76,20 +120,24 @@ class WelcomeScreen extends StatelessWidget {
 
   /// 앱 종료 확인 다이얼로그
   void _showExitDialog(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+    final isSmallScreen = screenSize.width < 600;
+    
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text(
-            '앱 종료',
+          title: Text(
+            'Exit App',
             style: TextStyle(
               fontWeight: FontWeight.bold,
-              color: Color(0xFF0F5C31),
+              color: const Color(0xFF0F5C31),
+              fontSize: isSmallScreen ? 18 : 20,
             ),
           ),
-          content: const Text(
-            '정말로 앱을 종료하시겠습니까?',
-            style: TextStyle(fontSize: 16),
+          content: Text(
+            'Are you sure you want to exit the app?',
+            style: TextStyle(fontSize: isSmallScreen ? 14 : 16),
           ),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -99,11 +147,11 @@ class WelcomeScreen extends StatelessWidget {
               onPressed: () {
                 Navigator.of(context).pop(); // 다이얼로그 닫기
               },
-              child: const Text(
-                '취소',
+              child: Text(
+                'Cancel',
                 style: TextStyle(
                   color: Colors.grey,
-                  fontSize: 16,
+                  fontSize: isSmallScreen ? 14 : 16,
                 ),
               ),
             ),
@@ -118,10 +166,14 @@ class WelcomeScreen extends StatelessWidget {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
+                padding: EdgeInsets.symmetric(
+                  horizontal: isSmallScreen ? 16 : 20,
+                  vertical: isSmallScreen ? 8 : 12,
+                ),
               ),
-              child: const Text(
-                '종료',
-                style: TextStyle(fontSize: 16),
+              child: Text(
+                'Exit',
+                style: TextStyle(fontSize: isSmallScreen ? 14 : 16),
               ),
             ),
           ],
@@ -132,68 +184,120 @@ class WelcomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+    final isSmallScreen = screenSize.width < 600;
+    final isTablet = screenSize.width >= 600 && screenSize.width < 1200;
+    final isDesktop = screenSize.width >= 1200;
+    
     return Scaffold(
       appBar: AppBar(
-        title: const Text('rAider'),
+        title: Text(
+          'rAider',
+          style: TextStyle(
+            fontSize: isSmallScreen ? 20 : 24,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         centerTitle: true,
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text(
-              'rAider',
-              style: TextStyle(
-                fontSize: 36,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF0F5C31),
-              ),
+      body: SafeArea(
+        child: Center(
+          child: Container(
+            constraints: isDesktop
+                ? const BoxConstraints(maxWidth: 600)
+                : null,
+            padding: EdgeInsets.all(isSmallScreen ? 16 : 24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                Text(
+                  'rAider',
+                  style: TextStyle(
+                    fontSize: isSmallScreen ? 28 : (isTablet ? 32 : 36),
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF0F5C31),
+                  ),
+                ),
+                SizedBox(height: isSmallScreen ? 20 : 30),
+                Divider(
+                  color: Colors.grey,
+                  thickness: 1.5,
+                  indent: isSmallScreen ? 30 : 50,
+                  endIndent: isSmallScreen ? 30 : 50,
+                  height: isSmallScreen ? 20 : 30,
+                ),
+                SizedBox(height: isSmallScreen ? 20 : 30),
+                Text(
+                  'Personal Mobility Safety Support',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: isSmallScreen ? 16 : (isTablet ? 20 : 24),
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                SizedBox(height: isSmallScreen ? 40 : 50),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const LoginScreen()),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isSmallScreen ? 40 : 50,
+                        vertical: isSmallScreen ? 12 : 15,
+                      ),
+                      backgroundColor: const Color(0xFF0F5C31),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: Text(
+                      'Login',
+                      style: TextStyle(
+                        fontSize: isSmallScreen ? 16 : 18,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(height: isSmallScreen ? 16 : 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const SignupScreen()),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isSmallScreen ? 40 : 50,
+                        vertical: isSmallScreen ? 12 : 15,
+                      ),
+                      backgroundColor: const Color(0xFF0F5C31),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: Text(
+                      'Sign Up',
+                      style: TextStyle(
+                        fontSize: isSmallScreen ? 16 : 18,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-            const Divider(
-              color: Colors.grey,
-              thickness: 1.5,
-              indent: 50,
-              endIndent: 50,
-              height: 30,
-            ),
-            const Text(
-              'Personal Mobility Safety Support',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 50),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const LoginScreen()),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 15),
-                backgroundColor: Color(0xFF0F5C31),
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('Login', style: TextStyle(fontSize: 18)),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const SignupScreen()),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 15),
-                backgroundColor: Color(0xFF0F5C31),
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('Sign Up', style: TextStyle(fontSize: 18)),
-            ),
-          ],
+          ),
         ),
       ),
       floatingActionButton: FloatingActionButton(
@@ -202,9 +306,12 @@ class WelcomeScreen extends StatelessWidget {
         },
         backgroundColor: Colors.red[600],
         foregroundColor: Colors.white,
-        mini: true,
-        tooltip: '앱 종료',
-        child: const Icon(Icons.power_settings_new, size: 20),
+        mini: isSmallScreen,
+        tooltip: 'Exit App',
+        child: Icon(
+          Icons.power_settings_new,
+          size: isSmallScreen ? 18 : 20,
+        ),
       ),
     );
   }

@@ -58,21 +58,21 @@ class _DrivingPageState extends State<DrivingPage> with WidgetsBindingObserver {
     });
   }
 
-  // 객체 이름을 한국어로 번역하는 함수
-  String translateToKorean(String objectName) {
+  // 객체 이름을 영어로 표시하는 함수
+  String translateToEnglish(String objectName) {
     switch (objectName.toLowerCase()) {
       case 'pothole':
-        return '포트홀';
+        return 'Pothole';
       case 'car':
-        return '자동차';
+        return 'Car';
       case 'person':
-        return '사람';
+        return 'Person';
       case 'animal':
-        return '동물';
+        return 'Animal';
       case 'manhole':
-        return '맨홀';
+        return 'Manhole';
       case 'speed_bump':
-        return '과속방지턱';
+        return 'Speed Bump';
       default:
         return objectName;
     }
@@ -87,7 +87,7 @@ class _DrivingPageState extends State<DrivingPage> with WidgetsBindingObserver {
       if (_userId.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('로그인이 필요합니다.'),
+            content: Text('Login required.'),
             backgroundColor: Colors.red,
             duration: Duration(milliseconds: 1500),
           ),
@@ -96,7 +96,7 @@ class _DrivingPageState extends State<DrivingPage> with WidgetsBindingObserver {
         return;
       }
       
-      print('현재 사용자: $_userId');
+      print('Current user: $_userId');
       
       // SharedPreferences에서 선택된 기기 코드 가져오기
       _deviceCode = prefs.getString('selected_device_code') ?? '';
@@ -106,12 +106,12 @@ class _DrivingPageState extends State<DrivingPage> with WidgetsBindingObserver {
         final availableDevices = await DeviceRentalService.getAvailableDevices();
         if (availableDevices.isNotEmpty) {
           _deviceCode = availableDevices.first['device_id'];
-          print('자동 선택된 기기: $_deviceCode');
+          print('Auto-selected device: $_deviceCode');
         } else {
           // 사용 가능한 기기가 없으면 오류 표시
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('사용 가능한 기기가 없습니다.'),
+              content: Text('No available devices.'),
               backgroundColor: Colors.red,
               duration: Duration(milliseconds: 1500),
             ),
@@ -119,7 +119,7 @@ class _DrivingPageState extends State<DrivingPage> with WidgetsBindingObserver {
           return;
         }
       } else {
-        print('선택된 기기: $_deviceCode');
+        print('Selected device: $_deviceCode');
       }
       
       // 페이지 진입 시 자동으로 대여 시작
@@ -127,10 +127,10 @@ class _DrivingPageState extends State<DrivingPage> with WidgetsBindingObserver {
         _startRental();
       });
     } catch (e) {
-      print('사용자 정보 로드 오류: $e');
+      print('User info load error: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('기기 정보 로드 실패: $e'),
+          content: Text('Device info load failed: $e'),
           backgroundColor: Colors.red,
           duration: const Duration(milliseconds: 1500),
         ),
@@ -158,16 +158,16 @@ class _DrivingPageState extends State<DrivingPage> with WidgetsBindingObserver {
         _isInitialized = true;
       });
     } catch (e) {
-      print('주행 모드 초기화 오류: $e');
+      print('Driving mode initialization error: $e');
     }
   }
 
   Future<void> _startRental() async {
     try {
       // 서버 연결 테스트
-      print('서버 연결 테스트 시작...');
+      print('Starting server connection test...');
       bool isServerConnected = await DeviceRentalService.testConnection();
-      print('서버 연결 상태: $isServerConnected');
+      print('Server connection status: $isServerConnected');
       
       // 현재 위치 가져오기
       final position = await DeviceRentalService.getCurrentLocation();
@@ -179,20 +179,20 @@ class _DrivingPageState extends State<DrivingPage> with WidgetsBindingObserver {
       
       while (retryCount < maxRetries) {
         try {
-          print('대여 시작 시도 ${retryCount + 1}/$maxRetries');
+          print('Rental start attempt ${retryCount + 1}/$maxRetries');
           result = await DeviceRentalService.startRental(
             userId: _userId,
             deviceCode: _deviceCode,
             latitude: position.latitude,
             longitude: position.longitude,
           );
-          print('대여 시작 성공: $result');
+          print('Rental start success: $result');
           break;
         } catch (e) {
           retryCount++;
-          print('대여 시작 실패 (시도 $retryCount/$maxRetries): $e');
+          print('Rental start failed (attempt $retryCount/$maxRetries): $e');
           if (retryCount >= maxRetries) {
-            throw Exception('서버 연결 실패: $e');
+            throw Exception('Server connection failed: $e');
           }
           await Future.delayed(const Duration(seconds: 2)); // 2초 대기 후 재시도
         }
@@ -209,9 +209,9 @@ class _DrivingPageState extends State<DrivingPage> with WidgetsBindingObserver {
         deviceCode: _deviceCode,
       );
       
-      String message = '기기 대여가 시작되었습니다!';
+      String message = 'Device rental has started!';
       if (result['offline_mode'] == true) {
-        message = '오프라인 모드로 대여가 시작되었습니다!';
+        message = 'Rental started in offline mode!';
       }
       
       // 기존 SnackBar 제거 후 성공 메시지 표시
@@ -227,7 +227,7 @@ class _DrivingPageState extends State<DrivingPage> with WidgetsBindingObserver {
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('대여 시작 실패: $e'),
+          content: Text('Rental start failed: $e'),
           backgroundColor: Colors.red,
           duration: const Duration(milliseconds: 1500),
         ),
@@ -256,16 +256,16 @@ class _DrivingPageState extends State<DrivingPage> with WidgetsBindingObserver {
         _rentalId = null;
       });
       
-      print('대여 종료 결과: $result'); // 디버깅용
+      print('Rental end result: $result'); // 디버깅용
       
       // 대여 종료 결과 표시
       _showRentalResult(result);
       
     } catch (e) {
-      print('대여 종료 오류: $e'); // 디버깅용
+      print('Rental end error: $e'); // 디버깅용
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('대여 종료 실패: $e'),
+          content: Text('Rental end failed: $e'),
           backgroundColor: Colors.red,
           duration: const Duration(milliseconds: 1500),
         ),
@@ -277,14 +277,14 @@ class _DrivingPageState extends State<DrivingPage> with WidgetsBindingObserver {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('대여 종료'),
+        title: const Text('Rental End'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('사용 시간: ${result['usage_minutes']}분'),
-            Text('이동 거리: ${result['moved_distance']}km'),
-            Text('요금: ${result['fee']}원'),
+            Text('Usage time: ${result['usage_minutes']} minutes'),
+            Text('Distance: ${result['moved_distance']} km'),
+            Text('Fee: ${result['fee']} won'),
           ],
         ),
         actions: [
@@ -299,7 +299,7 @@ class _DrivingPageState extends State<DrivingPage> with WidgetsBindingObserver {
                 (route) => false, // 모든 이전 라우트 제거
               );
             },
-            child: const Text('확인'),
+            child: const Text('OK'),
           ),
         ],
       ),
@@ -334,16 +334,16 @@ class _DrivingPageState extends State<DrivingPage> with WidgetsBindingObserver {
       barrierDismissible: false,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('기기 대여 종료'),
-          content: const Text('기기 대여를 종료하시겠습니까?\n종료 시 요금이 정산됩니다.'),
+          title: const Text('End Device Rental'),
+          content: const Text('Do you want to end the device rental?\nFees will be calculated upon exit.'),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('취소'),
+              child: const Text('Cancel'),
             ),
             TextButton(
               onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('종료'),
+              child: const Text('Exit'),
             ),
           ],
         );
@@ -369,8 +369,8 @@ class _DrivingPageState extends State<DrivingPage> with WidgetsBindingObserver {
       barrierDismissible: false,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('앱 일시정지'),
-          content: const Text('기기 대여 중에는 앱을 종료할 수 없습니다.\n앱으로 돌아가세요.'),
+          title: const Text('App Paused'),
+          content: const Text('You cannot exit the app during device rental.\nPlease return to the app.'),
           actions: [
             TextButton(
               onPressed: () {
@@ -378,7 +378,7 @@ class _DrivingPageState extends State<DrivingPage> with WidgetsBindingObserver {
                 // 앱을 다시 포그라운드로 가져오기
                 SystemChannels.platform.invokeMethod('SystemNavigator.pop');
               },
-              child: const Text('확인'),
+              child: const Text('OK'),
             ),
           ],
         );
@@ -403,22 +403,39 @@ class _DrivingPageState extends State<DrivingPage> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+    final isSmallScreen = screenSize.width < 600;
+    
     if (!_isInitialized) {
       return Scaffold(
         appBar: AppBar(
-          title: const Text('주행 모드'),
+          title: Text(
+            'Driving Mode',
+            style: TextStyle(
+              fontSize: isSmallScreen ? 18 : 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
           backgroundColor: const Color(0xFF0F5C31),
           foregroundColor: Colors.white,
           automaticallyImplyLeading: false,
         ),
-        body: const Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              CircularProgressIndicator(),
-              SizedBox(height: 20),
-              Text('주행 모드를 초기화하는 중...'),
-            ],
+        body: SafeArea(
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const CircularProgressIndicator(),
+                SizedBox(height: isSmallScreen ? 16 : 20),
+                Text(
+                  'Initializing driving mode...',
+                  style: TextStyle(
+                    fontSize: isSmallScreen ? 14 : 16,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       );
@@ -428,7 +445,13 @@ class _DrivingPageState extends State<DrivingPage> with WidgetsBindingObserver {
       onWillPop: _handleBackButton,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('주행 모드'),
+          title: Text(
+            'Driving Mode',
+            style: TextStyle(
+              fontSize: isSmallScreen ? 18 : 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
           backgroundColor: const Color(0xFF0F5C31),
           foregroundColor: Colors.white,
           automaticallyImplyLeading: false,
@@ -441,7 +464,7 @@ class _DrivingPageState extends State<DrivingPage> with WidgetsBindingObserver {
                   children: [
                     Icon(Icons.location_on, color: Colors.green),
                     SizedBox(width: 4),
-                    Text('대여 중', style: TextStyle(color: Colors.green)),
+                    Text('Renting', style: TextStyle(color: Colors.green)),
                   ],
                 ),
               ),
@@ -469,11 +492,11 @@ class _DrivingPageState extends State<DrivingPage> with WidgetsBindingObserver {
 
                         // 감지된 객체를 안내에 추가
                         for (final object in detectedObjects) {
-                          String koreanName = translateToKorean(object);
-                          announcement += '$koreanName ';
+                          String englishName = translateToEnglish(object);
+                          announcement += '$englishName ';
                         }
                         if (announcement.isNotEmpty) {
-                          flutterTts.speak('$announcement 감지');
+                          flutterTts.speak('$announcement detected');
                           // 탐지 후 비활성화 (10초 후 다시 활성화됨)
                           setState(() {
                             _isDetectionEnabled = false;
@@ -484,7 +507,7 @@ class _DrivingPageState extends State<DrivingPage> with WidgetsBindingObserver {
                     captureImage: null, // 메모리 절약을 위해 비활성화
                   )
                 : const Center(
-                    child: Text('카메라를 초기화할 수 없습니다'),
+                    child: Text('Cannot initialize camera'),
                   ),
           ),
           
@@ -510,16 +533,16 @@ class _DrivingPageState extends State<DrivingPage> with WidgetsBindingObserver {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text(
-                      '카메라를 전방으로 향하게해 위험 요소를 탐지하세요!',
+                    Text(
+                      'Point the camera forward to detect hazards!',
                       style: TextStyle(
-                        fontSize: 16,
+                        fontSize: isSmallScreen ? 14 : 16,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF0F5C31),
+                        color: const Color(0xFF0F5C31),
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: isSmallScreen ? 12 : 16),
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
@@ -527,14 +550,19 @@ class _DrivingPageState extends State<DrivingPage> with WidgetsBindingObserver {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.red,
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          padding: EdgeInsets.symmetric(
+                            vertical: isSmallScreen ? 12 : 16,
+                          ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        child: const Text(
-                          '대여 종료하기',
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        child: Text(
+                          'End Rental',
+                          style: TextStyle(
+                            fontSize: isSmallScreen ? 16 : 18,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ),
@@ -562,20 +590,20 @@ class _DrivingPageState extends State<DrivingPage> with WidgetsBindingObserver {
                     ),
                   ],
                 ),
-                child: const Column(
+                child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      '대여를 시작하는 중입니다...',
+                      'Starting rental...',
                       style: TextStyle(
-                        fontSize: 16,
+                        fontSize: isSmallScreen ? 14 : 16,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF0F5C31),
+                        color: const Color(0xFF0F5C31),
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    SizedBox(height: 16),
-                    CircularProgressIndicator(),
+                    SizedBox(height: isSmallScreen ? 12 : 16),
+                    const CircularProgressIndicator(),
                   ],
                 ),
               ),

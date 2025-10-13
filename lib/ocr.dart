@@ -285,8 +285,13 @@ class _IdCardOcrPageState extends State<IdCardOcrPage> {
         if (result['verified'] == true) {
           // 인증 성공 시 사용자 ID를 SharedPreferences에 저장
           final prefs = await SharedPreferences.getInstance();
-          await prefs.setString('user_id', result['user_id']);
-          print('사용자 ID 저장됨: ${result['user_id']}');
+          final userId = result['user_id'].toString();
+          final success = await prefs.setString('user_id', userId);
+          if (success) {
+            print('사용자 ID 저장됨: $userId');
+          } else {
+            print('사용자 ID 저장 실패: $userId');
+          }
         }
         return result['verified'] == true;
       } else {
@@ -364,20 +369,20 @@ class _IdCardOcrPageState extends State<IdCardOcrPage> {
     if (_parsedOcrData == null) {
       // 파싱된 데이터가 없으면 모든 정보가 누락된 것으로 간주
       missingItems.addAll([
-        _buildMissingItem('이름'),
-        _buildMissingItem('운전면허증 번호'),
-        _buildMissingItem('주민번호'),
+        _buildMissingItem('Name'),
+        _buildMissingItem('Driver License Number'),
+        _buildMissingItem('Personal Number'),
       ]);
     } else {
       // 각 정보가 누락되었는지 확인 (null이거나 빈 문자열인 경우)
       if (_parsedOcrData!['name'] == null || _parsedOcrData!['name']!.trim().isEmpty) {
-        missingItems.add(_buildMissingItem('이름'));
+        missingItems.add(_buildMissingItem('Name'));
       }
       if (_parsedOcrData!['license_number'] == null || _parsedOcrData!['license_number']!.trim().isEmpty) {
-        missingItems.add(_buildMissingItem('운전면허증 번호'));
+        missingItems.add(_buildMissingItem('Driver License Number'));
       }
       if (_parsedOcrData!['id_number'] == null || _parsedOcrData!['id_number']!.trim().isEmpty) {
-        missingItems.add(_buildMissingItem('주민번호'));
+        missingItems.add(_buildMissingItem('Personal Number'));
       }
     }
     
@@ -452,11 +457,11 @@ class _IdCardOcrPageState extends State<IdCardOcrPage> {
             ),
             child: Center(
               child: Text(
-                '운전면허증을 가이드라인에 맞춰주세요',
+                'Please keep your driver license in line with the guidelines',
                 style: TextStyle(
                   color: Colors.white,
                   backgroundColor: Colors.black38,
-                  fontSize: 16,
+                  fontSize: 12,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -469,19 +474,26 @@ class _IdCardOcrPageState extends State<IdCardOcrPage> {
 
   @override
   Widget build(BuildContext context) {
-
-    final screenW = MediaQuery.of(context).size.width;
-    final screenH = MediaQuery.of(context).size.height;
+    final screenSize = MediaQuery.of(context).size;
+    final isSmallScreen = screenSize.width < 600;
+    
+    final screenW = screenSize.width;
+    final screenH = screenSize.height;
     final boxW = screenW * guideBoxWidthPercent;
     final boxH = boxW / guideBoxRatio;
     final boxLeft = (screenW - boxW) / 2;
     final boxTop = (screenH - boxH) / 2;
 
-
     return Scaffold(
       appBar: AppBar(
-        title: Text("운전면허증 본인 확인"),
-        leading: BackButton(),
+        title: Text(
+          "Driver's License Verification",
+          style: TextStyle(
+            fontSize: isSmallScreen ? 16 : 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        leading: const BackButton(),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         elevation: 1,
@@ -572,11 +584,11 @@ class _IdCardOcrPageState extends State<IdCardOcrPage> {
                               children: [
                                 // 파싱된 데이터가 있으면 구조화된 형태로 표시
                                 if (_parsedOcrData != null) ...[
-                                  _buildInfoRow('이름', _parsedOcrData!['name'] ?? '인식되지 않음'),
+                                  _buildInfoRow('Name', _parsedOcrData!['name'] ?? 'Not recognized'),
                                   SizedBox(height: 8),
-                                  _buildInfoRow('운전면허증 번호', _parsedOcrData!['license_number'] ?? '인식되지 않음'),
+                                  _buildInfoRow('Driver License Number', _parsedOcrData!['license_number'] ?? 'Not recognized'),
                                   SizedBox(height: 8),
-                                  _buildInfoRow('주민번호', _parsedOcrData!['id_number'] ?? '인식되지 않음'),
+                                  _buildInfoRow('Personal Number', _parsedOcrData!['id_number'] ?? 'Not recognized'),
                                   SizedBox(height: 12),
                                   Container(
                                     width: double.infinity,
@@ -749,7 +761,7 @@ class _IdCardOcrPageState extends State<IdCardOcrPage> {
                                 ),
                               )
                             : Icon(Icons.verified_user),
-                        label: Text(_isVerifying ? '인증 중...' : '인증하기'),
+                        label: Text(_isVerifying ? 'Verifying...' : 'Verify'),
                         onPressed: _isVerifying ? null : () async {
                           final isVerified = await _verifyUserInfo();
                           if (isVerified) {
