@@ -20,7 +20,8 @@
 > 기술 : Python, YOLO, OpenCV, RAG, LangChain, SQL, Flask, Android <br>
 > 툴 : Cursor, MySQL
 
-<!--
 ---
-**프로젝트 데모 화면** <br>
-<img src="img/ex.jpg" alt="감정 인식 챗봇 데모" width="500"/> -->
+**프로젝트 데모 화면** <br><br>
+<img src="img/1.jpg" alt="기능 데모" width="150"/>
+<img src="img/2.jpg" alt="기능 데모" width="150"/>
+<img src="img/3.jpg" alt="기능 데모" width="150"/>
