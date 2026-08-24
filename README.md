@@ -17,8 +17,8 @@
 
 ---
 **프로젝트 기술&툴**
-> 기술 : Python, YOLO, OpenCV, RAG, LangChain, SQL, Flask, Android <br>
-> 툴 : Cursor, MySQL, AWS
+> Skills : Python, YOLO, OpenCV, RAG, LangChain, VectorDB, SQL, Flask, Android, kotlin <br>
+> Tools : Cursor, Google Colab, MySQL, AWS
 
 ---
 **프로젝트 데모 화면** <br><br>
