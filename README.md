@@ -2,7 +2,7 @@
 ---
 **프로젝트 개요**
 > 🗓️ : 2025.03 ~ 2025.12 <br>
-> Team : 3인 1팀 <br>
+> Team : 3인 <br>
 > Contents : YOLO 모델 기반 전방 장애물 탐지, 헬멧 착용 여부 탐지, 신고 유형 탐지 및 OCR을 활용한 운전면허증 검증 구현 및 MVP 수준의 공유 전동킥보드 대여 APP 및 고객센터 챗봇 개발
 
 ---
@@ -18,7 +18,7 @@
 ---
 **프로젝트 기술&툴**
 > 기술 : Python, YOLO, OpenCV, RAG, LangChain, SQL, Flask, Android <br>
-> 툴 : Cursor, MySQL
+> 툴 : Cursor, MySQL, AWS
 
 ---
 **프로젝트 데모 화면** <br><br>
